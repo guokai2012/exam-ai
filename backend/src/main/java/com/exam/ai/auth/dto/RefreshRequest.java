@@ -4,6 +4,9 @@ import lombok.Builder;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * RefreshRequest 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "刷新令牌请求")
 @Builder
 public record RefreshRequest(

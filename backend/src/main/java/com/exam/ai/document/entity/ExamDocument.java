@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Data;
 
+/**
+ * ExamDocument 类，承载当前分层中的业务职责。
+ */
 @Data
 @Schema(description = "考试文档实体")
 @TableName("exam_document")

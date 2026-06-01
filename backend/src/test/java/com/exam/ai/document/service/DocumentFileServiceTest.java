@@ -2,7 +2,8 @@ package com.exam.ai.document.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.exam.ai.document.config.DocumentProperties;
+import com.exam.ai.common.config.DocumentProperties;
+import com.exam.ai.document.service.impl.DocumentFileServiceImpl;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +16,7 @@ class DocumentFileServiceTest {
     void sanitizesFilenameAndResolvesExtension() {
         DocumentProperties properties = new DocumentProperties();
         properties.setMaxSize(DataSize.ofMegabytes(20));
-        DocumentFileService service = new DocumentFileService(properties);
+        DocumentFileServiceImpl service = new DocumentFileServiceImpl(properties);
 
         String filename = service.sanitizeFilename("../试题?.md");
 
@@ -26,7 +27,7 @@ class DocumentFileServiceTest {
     @Test
     void extractsMarkdownAndCalculatesSha256() throws Exception {
         DocumentProperties properties = new DocumentProperties();
-        DocumentFileService service = new DocumentFileService(properties);
+        DocumentFileServiceImpl service = new DocumentFileServiceImpl(properties);
         Path file = Files.createTempFile("exam-ai", ".md");
         Files.writeString(file, "# 题目\n\n1. Java 是什么？", StandardCharsets.UTF_8);
 

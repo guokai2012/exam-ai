@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
+/**
+ * AdminCreateUserRequest 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "后台新建用户请求")
 @Builder
 public record AdminCreateUserRequest(

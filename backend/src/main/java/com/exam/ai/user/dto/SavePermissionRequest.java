@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * SavePermissionRequest 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "保存权限请求")
 @Builder
 public record SavePermissionRequest(

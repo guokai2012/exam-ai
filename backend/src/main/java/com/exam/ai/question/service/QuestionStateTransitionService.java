@@ -7,33 +7,19 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
-import org.springframework.stereotype.Service;
 
-@Service
-public class QuestionStateTransitionService {
+/**
+ * QuestionStateTransitionService 接口，定义当前业务模块对外提供的服务契约。
+ */
+public interface QuestionStateTransitionService {
 
-    private final StateMachineFactory<QuestionState, QuestionEvent> stateMachineFactory;
-
-    public QuestionStateTransitionService(StateMachineFactory<QuestionState, QuestionEvent> stateMachineFactory) {
-        this.stateMachineFactory = stateMachineFactory;
-    }
-
-    public QuestionState transit(Long questionId, String currentState, QuestionEvent event) {
-        QuestionState state = QuestionState.valueOf(currentState);
-        StateMachine<QuestionState, QuestionEvent> machine = stateMachineFactory.getStateMachine("question-" + questionId);
-        machine.stopReactively().block();
-        machine.getStateMachineAccessor().doWithAllRegions(access -> access
-                .resetStateMachineReactively(new DefaultStateMachineContext<>(state, null, null, null))
-                .block());
-        machine.startReactively().block();
-        Boolean accepted = machine.sendEvent(MessageBuilder.withPayload(event).build());
-        if (!Boolean.TRUE.equals(accepted)) {
-            machine.stopReactively().block();
-            throw BusinessException.badRequest("题目状态不允许执行该操作");
-        }
-        QuestionState next = machine.getState().getId();
-        machine.stopReactively().block();
-        return next;
-    }
+    /**
+     * 更新业务状态，并保持相关数据的一致性。
+     * @param questionId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param currentState 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param event 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public QuestionState transit(Long questionId, String currentState, QuestionEvent event);
 }
-

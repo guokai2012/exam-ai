@@ -2,6 +2,7 @@ package com.exam.ai.question.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.exam.ai.question.util.QuestionStemNormalizer;
 import org.junit.jupiter.api.Test;
 
 class QuestionStemNormalizerTest {

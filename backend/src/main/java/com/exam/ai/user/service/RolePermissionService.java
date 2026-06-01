@@ -10,39 +10,31 @@ import com.exam.ai.user.mapper.SysPermissionMapper;
 import com.exam.ai.user.mapper.SysRoleMapper;
 import com.exam.ai.user.mapper.SysUserRoleMapper;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
-@Service
-public class RolePermissionService {
+/**
+ * RolePermissionService 接口，定义当前业务模块对外提供的服务契约。
+ */
+public interface RolePermissionService {
 
-    private final SysRoleMapper roleMapper;
-    private final SysPermissionMapper permissionMapper;
-    private final SysUserRoleMapper userRoleMapper;
-
-    public RolePermissionService(SysRoleMapper roleMapper, SysPermissionMapper permissionMapper,
-                                 SysUserRoleMapper userRoleMapper) {
-        this.roleMapper = roleMapper;
-        this.permissionMapper = permissionMapper;
-        this.userRoleMapper = userRoleMapper;
-    }
-
-    public List<String> roles(Long userId) {
-        return roleMapper.selectByUserId(userId).stream().map(SysRole::getRoleCode).toList();
-    }
-
-    public List<String> permissions(Long userId) {
-        return permissionMapper.selectByUserId(userId).stream().map(SysPermission::getPermissionCode).toList();
-    }
-
-    public void replaceUserRoles(Long userId, List<String> roleCodes) {
-        userRoleMapper.delete(new LambdaUpdateWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
-        for (String roleCode : roleCodes.stream().distinct().toList()) {
-            SysRole role = roleMapper.selectOne(new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleCode, roleCode));
-            if (role == null) {
-                throw BusinessException.badRequest("角色不存在");
-            }
-            userRoleMapper.insert(new SysUserRole(userId, role.getId()));
-        }
-    }
+    /**
+     * 查询业务数据集合，并按调用场景组织返回结构。
+     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public List<String> roles(Long userId);
+    /**
+     * 查询业务数据集合，并按调用场景组织返回结构。
+     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public List<String> permissions(Long userId);
+    /**
+     * 更新业务状态，并保持相关数据的一致性。
+     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param roleCodes 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public void replaceUserRoles(Long userId, List<String> roleCodes);
 }
-

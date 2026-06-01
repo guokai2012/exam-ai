@@ -1,12 +1,15 @@
 package com.exam.ai.user.scheduler;
 
-import com.exam.ai.user.dto.PermissionScanResponse;
+import com.exam.ai.user.vo.PermissionScanResponse;
 import com.exam.ai.user.service.AdminPermissionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * PermissionScanScheduler 类，承载当前分层中的业务职责。
+ */
 @Component
 public class PermissionScanScheduler {
 
@@ -30,6 +33,10 @@ public class PermissionScanScheduler {
             fixedDelayString = "${app.permission.scan-delay:600000}",
             initialDelayString = "${app.permission.scan-initial-delay:60000}"
     )
+    /**
+     * 更新业务状态，并保持相关数据的一致性。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     public void syncControllerPermissions() {
         try {
             // 扫描结果会自动新增、更新和删除扫描来源的动作权限。

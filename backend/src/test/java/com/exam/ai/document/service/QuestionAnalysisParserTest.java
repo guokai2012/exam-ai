@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.document.dto.AiQuestionResult;
+import com.exam.ai.document.util.QuestionAnalysisParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 

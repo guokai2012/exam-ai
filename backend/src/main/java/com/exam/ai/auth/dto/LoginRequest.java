@@ -5,6 +5,9 @@ import lombok.Builder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * LoginRequest 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "登录请求")
 @Builder
 public record LoginRequest(

@@ -2,6 +2,7 @@ package com.exam.ai.document.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.exam.ai.document.util.DocumentChunker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -2,7 +2,7 @@ package com.exam.ai.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.exam.ai.config.SecurityProperties;
+import com.exam.ai.common.config.SecurityProperties;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

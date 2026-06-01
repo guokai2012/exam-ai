@@ -6,12 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.question.entity.QuestionEvent;
 import com.exam.ai.question.entity.QuestionState;
+import com.exam.ai.question.service.impl.QuestionStateTransitionServiceImpl;
 import com.exam.ai.question.statemachine.QuestionStateMachineConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig(classes = {QuestionStateMachineConfig.class, QuestionStateTransitionService.class})
+@SpringJUnitConfig(classes = {QuestionStateMachineConfig.class, QuestionStateTransitionServiceImpl.class})
 class QuestionStateTransitionServiceTest {
 
     @Autowired

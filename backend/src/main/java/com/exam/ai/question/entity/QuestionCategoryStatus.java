@@ -2,6 +2,9 @@ package com.exam.ai.question.entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * QuestionCategoryStatus 类，承载当前分层中的业务职责。
+ */
 @Schema(description = "题目分类状态常量")
 public final class QuestionCategoryStatus {
 

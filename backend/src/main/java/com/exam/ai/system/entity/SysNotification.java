@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Data;
 
+/**
+ * SysNotification 类，承载当前分层中的业务职责。
+ */
 @Data
 @Schema(description = "站内通知实体")
 @TableName("sys_notification")

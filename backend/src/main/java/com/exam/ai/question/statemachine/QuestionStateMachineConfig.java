@@ -9,10 +9,19 @@ import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 
+/**
+ * QuestionStateMachineConfig 类，承载当前分层中的业务职责。
+ */
 @Configuration
 @EnableStateMachineFactory
 public class QuestionStateMachineConfig extends EnumStateMachineConfigurerAdapter<QuestionState, QuestionEvent> {
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param S 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param states 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @Override
     public void configure(StateMachineStateConfigurer<QuestionState, QuestionEvent> states) throws Exception {
         states.withStates()
@@ -20,6 +29,12 @@ public class QuestionStateMachineConfig extends EnumStateMachineConfigurerAdapte
                 .states(EnumSet.allOf(QuestionState.class));
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param S 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param transitions 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @Override
     public void configure(StateMachineTransitionConfigurer<QuestionState, QuestionEvent> transitions) throws Exception {
         transitions

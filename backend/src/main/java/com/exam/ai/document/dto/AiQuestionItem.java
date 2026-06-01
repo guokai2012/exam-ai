@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * AiQuestionItem 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "AI 识别题目项")
 @Builder
 public record AiQuestionItem(

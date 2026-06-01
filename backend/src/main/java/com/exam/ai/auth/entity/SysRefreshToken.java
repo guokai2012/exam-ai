@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Data;
 
+/**
+ * SysRefreshToken 类，承载当前分层中的业务职责。
+ */
 @Data
 @Schema(description = "刷新令牌实体")
 @TableName("sys_refresh_token")

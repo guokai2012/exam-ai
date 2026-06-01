@@ -1,6 +1,6 @@
 package com.exam.ai.security;
 
-import com.exam.ai.config.SecurityProperties;
+import com.exam.ai.common.config.SecurityProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -8,22 +8,41 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import org.springframework.stereotype.Service;
 
+/**
+ * TokenHashService 类，承载当前分层中的业务职责。
+ */
 @Service
 public class TokenHashService {
 
     private final SecurityProperties properties;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * 构造 TokenHashService 实例并注入运行所需依赖。
+     * @param properties 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     public TokenHashService(SecurityProperties properties) {
         this.properties = properties;
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     public String randomToken() {
         byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /**
+     * 查询或解析业务数据，返回前端或内部流程需要的结果。
+     * @param token 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     public String hash(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

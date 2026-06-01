@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * ExamQuestionTagRelation 类，承载当前分层中的业务职责。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

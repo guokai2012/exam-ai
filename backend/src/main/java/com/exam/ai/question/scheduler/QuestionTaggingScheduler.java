@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * QuestionTaggingScheduler 类，承载当前分层中的业务职责。
+ */
 @Component
 public class QuestionTaggingScheduler {
 

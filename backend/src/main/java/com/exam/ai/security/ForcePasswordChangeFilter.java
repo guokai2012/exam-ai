@@ -1,6 +1,6 @@
 package com.exam.ai.security;
 
-import com.exam.ai.common.api.ApiResponse;
+import com.exam.ai.common.result.ApiResponse;
 import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.mapper.SysUserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +17,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * ForcePasswordChangeFilter 类，承载当前分层中的业务职责。
+ */
 @Component
 public class ForcePasswordChangeFilter extends OncePerRequestFilter {
 
@@ -29,11 +32,24 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
     private final SysUserMapper userMapper;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 构造 ForcePasswordChangeFilter 实例并注入运行所需依赖。
+     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     public ForcePasswordChangeFilter(SysUserMapper userMapper, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param response 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param filterChain 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -52,6 +68,11 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param uri 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     */
     private boolean isAllowed(String uri) {
         return ALLOWED_PATHS.contains(uri);
     }

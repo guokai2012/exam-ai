@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
 
+/**
+ * ExamQuestionSource 类，承载当前分层中的业务职责。
+ */
 @Data
 @Schema(description = "题目来源实体")
 @TableName("exam_question_source")

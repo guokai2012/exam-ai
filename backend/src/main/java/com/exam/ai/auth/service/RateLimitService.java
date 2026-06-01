@@ -1,33 +1,31 @@
 package com.exam.ai.auth.service;
 
 import com.exam.ai.common.exception.BusinessException;
-import com.exam.ai.config.SecurityProperties;
+import com.exam.ai.common.config.SecurityProperties;
 import com.exam.ai.security.RedisKeys;
 import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
 
-@Service
-public class RateLimitService {
+/**
+ * RateLimitService 接口，定义当前业务模块对外提供的服务契约。
+ */
+public interface RateLimitService {
 
-    private final StringRedisTemplate redisTemplate;
-
-    public RateLimitService(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
-
-    public void check(String type, String discriminator, SecurityProperties.RateLimit limit) {
-        String key = RedisKeys.rate(type, discriminator);
-        Long count = redisTemplate.opsForValue().increment(key);
-        if (count != null && count == 1L) {
-            redisTemplate.expire(key, limit.window());
-        }
-        if (count != null && count > limit.limit()) {
-            throw BusinessException.tooManyRequests();
-        }
-    }
-
-    public void check(String type, String discriminator, int limit, Duration window) {
-        check(type, discriminator, new SecurityProperties.RateLimit(limit, window));
-    }
+    /**
+     * 校验业务参数或状态，阻止非法流程继续执行。
+     * @param type 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param discriminator 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param limit 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public void check(String type, String discriminator, SecurityProperties.RateLimit limit);
+    /**
+     * 校验业务参数或状态，阻止非法流程继续执行。
+     * @param type 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param discriminator 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param limit 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param window 业务参数，参与当前方法的校验、查询或状态变更。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public void check(String type, String discriminator, int limit, Duration window);
 }

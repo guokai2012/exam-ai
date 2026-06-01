@@ -8,9 +8,10 @@ import static org.mockito.Mockito.when;
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.entity.SysConfig;
-import com.exam.ai.system.dto.SystemConfigUpdateResult;
+import com.exam.ai.system.vo.SystemConfigUpdateResult;
 import com.exam.ai.system.dto.UpdateSystemConfigRequest;
 import com.exam.ai.system.mapper.SysConfigMapper;
+import com.exam.ai.system.service.impl.SystemConfigServiceImpl;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +26,7 @@ class SystemConfigServiceTest {
     private SysConfigMapper configMapper;
 
     @InjectMocks
-    private SystemConfigService systemConfigService;
+    private SystemConfigServiceImpl systemConfigService;
 
     @Test
     void shouldUseDefaultRetryCountWhenConfigMissing() {

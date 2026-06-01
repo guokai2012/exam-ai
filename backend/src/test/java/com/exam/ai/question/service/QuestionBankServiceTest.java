@@ -14,6 +14,8 @@ import com.exam.ai.question.mapper.ExamQuestionCategoryMapper;
 import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
 import com.exam.ai.question.mapper.ExamQuestionTagMapper;
 import com.exam.ai.question.mapper.ExamQuestionTagRelationMapper;
+import com.exam.ai.question.service.impl.QuestionBankServiceImpl;
+import com.exam.ai.question.util.QuestionStemNormalizer;
 import com.exam.ai.question.dto.ReviewQuestionRequest;
 import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.service.NotificationService;
@@ -52,7 +54,7 @@ class QuestionBankServiceTest {
     private ObjectMapper objectMapper;
 
     @InjectMocks
-    private QuestionBankService questionBankService;
+    private QuestionBankServiceImpl questionBankService;
 
     @Test
     void shouldIncreaseRetryCountBeforeRetryTagging() {

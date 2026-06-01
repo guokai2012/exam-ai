@@ -6,6 +6,9 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+/**
+ * SysPermissionMapper 接口，定义当前业务模块对外提供的服务契约。
+ */
 public interface SysPermissionMapper extends BaseMapper<SysPermission> {
 
     @Select("""

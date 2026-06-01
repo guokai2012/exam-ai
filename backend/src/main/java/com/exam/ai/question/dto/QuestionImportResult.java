@@ -8,6 +8,9 @@ import com.exam.ai.question.entity.ExamQuestionCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 
+/**
+ * QuestionImportResult 记录对象，封装当前业务流程中的不可变数据。
+ */
 @Schema(description = "题目导入结果")
 @Builder
 public record QuestionImportResult(

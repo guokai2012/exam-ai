@@ -1,6 +1,6 @@
 package com.exam.ai.common.exception;
 
-import com.exam.ai.common.api.ApiResponse;
+import com.exam.ai.common.result.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,19 +9,40 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * GlobalExceptionHandler 类，承载当前分层中的业务职责。
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param ex 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
         return ResponseEntity.status(ex.getStatus()).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param ex 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiResponse<Void>> handleValidation(Exception ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("BAD_REQUEST", "请求参数不合法"));
     }
 
+    /**
+     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * @param ex 业务参数，参与当前方法的校验、查询或状态变更。
+     * @return 当前业务步骤的处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
