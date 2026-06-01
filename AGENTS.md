@@ -110,6 +110,11 @@
 - 基于 Spring Boot 3.x 最新版 Spring Security。
 - 使用 JWT 无状态认证。
 - 权限架构至少包含 `JwtAuthenticationFilter`、用户加载服务和 `SecurityConfig`。
+- 后端业务代码获取当前登录用户信息必须统一使用 `com.exam.ai.util.CurrentUserUtils`，例如获取当前用户、用户 ID、用户名、角色和权限。
+- 禁止在 Controller、Service、Mapper 或其他业务代码中直接读取 `SecurityContextHolder` 获取当前用户；安全过滤器等底层安全组件如确需使用，必须同步维护 `CurrentUserUtils` 上下文。
+- 禁止将 `@AuthenticationPrincipal UserPrincipal` 从 Controller 层继续下传到 Service 层；Service 层必须通过 `CurrentUserUtils` 自行获取当前用户上下文。
+- 子线程、线程池任务或异步任务需要访问当前用户时，必须使用 `CurrentUserUtils.wrap(...)`、`CurrentUserUtils.runAs(...)` 或项目统一配置的上下文传播执行器。
+- 定时任务必须在入口使用 `CurrentUserUtils.runAsSystem(SystemUserModule.XXX, ...)` 绑定对应模块虚拟系统用户，便于审计字段记录系统操作来源。
 - 角色控制使用 `@PreAuthorize("hasRole('ADMIN')")`。
 - 接口权限控制使用 `@PreAuthorize("hasAuthority('sys:user:list')")` 这类独立权限码。
 - 所有 Controller 接口权限必须按具体接口动作单独拆分权限码，不允许只通过 `read`、`write` 等粗粒度权限简单区分一组接口。
