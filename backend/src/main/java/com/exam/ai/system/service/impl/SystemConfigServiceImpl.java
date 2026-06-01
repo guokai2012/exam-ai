@@ -3,12 +3,12 @@ package com.exam.ai.system.service.impl;
 import com.exam.ai.system.service.SystemConfigService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.exam.ai.common.exception.BusinessException;
-import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.entity.SysConfig;
 import com.exam.ai.system.vo.SystemConfigResponse;
 import com.exam.ai.system.vo.SystemConfigUpdateResult;
 import com.exam.ai.system.dto.UpdateSystemConfigRequest;
 import com.exam.ai.system.mapper.SysConfigMapper;
+import com.exam.ai.util.CurrentUserUtils;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,19 +82,18 @@ public class SystemConfigServiceImpl implements SystemConfigService {
      * 更新业务状态，并保持相关数据的一致性。
      * @param key 业务参数，参与当前方法的校验、查询或状态变更。
      * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public SystemConfigUpdateResult updateConfig(String key, UpdateSystemConfigRequest request, UserPrincipal principal) {
+    public SystemConfigUpdateResult updateConfig(String key, UpdateSystemConfigRequest request) {
         SysConfig config = configMapper.selectById(key);
         if (config == null) {
             throw BusinessException.badRequest("系统配置不存在");
         }
         ValidatedConfigValue validated = validateValue(key, request.configValue());
         config.setConfigValue(validated.value());
-        config.setUpdatedBy(principal.userId());
+        config.setUpdatedBy(CurrentUserUtils.currentUserId());
         configMapper.updateById(config);
         return new SystemConfigUpdateResult(toResponse(configMapper.selectById(key)), validated.message());
     }

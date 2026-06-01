@@ -1,7 +1,6 @@
 package com.exam.ai.system.controller;
 
 import com.exam.ai.common.result.ApiResponse;
-import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.vo.SystemConfigResponse;
 import com.exam.ai.system.vo.SystemConfigUpdateResult;
 import com.exam.ai.system.dto.UpdateSystemConfigRequest;
@@ -12,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -55,7 +53,6 @@ public class SystemConfigController {
      * 更新业务状态，并保持相关数据的一致性。
      * @param key 业务参数，参与当前方法的校验、查询或状态变更。
      * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
@@ -63,9 +60,8 @@ public class SystemConfigController {
     @PreAuthorize("hasAuthority('system-config:update')")
     @Operation(summary = "更新系统配置", description = "按配置键更新配置值。")
     public ApiResponse<SystemConfigResponse> update(@Parameter(description = "配置键") @PathVariable String key,
-                                                    @Valid @RequestBody UpdateSystemConfigRequest request,
-                                                    @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
-        SystemConfigUpdateResult result = systemConfigService.updateConfig(key, request, principal);
+                                                    @Valid @RequestBody UpdateSystemConfigRequest request) {
+        SystemConfigUpdateResult result = systemConfigService.updateConfig(key, request);
         return ApiResponse.ok(result.config(), result.message());
     }
 }

@@ -1,37 +1,16 @@
 package com.exam.ai.question.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.document.dto.AiQuestionItem;
 import com.exam.ai.question.entity.ExamQuestionBank;
 import com.exam.ai.question.entity.ExamQuestionCategory;
-import com.exam.ai.question.entity.ExamQuestionSource;
-import com.exam.ai.question.entity.ExamQuestionTag;
-import com.exam.ai.question.entity.ExamQuestionTagRelation;
-import com.exam.ai.question.entity.QuestionCategoryStatus;
-import com.exam.ai.question.entity.QuestionEvent;
-import com.exam.ai.question.entity.QuestionState;
 import com.exam.ai.question.dto.CreateQuestionCategoryRequest;
 import com.exam.ai.question.vo.QuestionCategoryResponse;
 import com.exam.ai.question.dto.QuestionImportResult;
 import com.exam.ai.question.vo.QuestionResponse;
 import com.exam.ai.question.dto.ReviewQuestionRequest;
-import com.exam.ai.question.mapper.ExamQuestionBankMapper;
-import com.exam.ai.question.mapper.ExamQuestionCategoryMapper;
-import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
-import com.exam.ai.question.mapper.ExamQuestionTagMapper;
-import com.exam.ai.question.mapper.ExamQuestionTagRelationMapper;
-import com.exam.ai.security.UserPrincipal;
-import com.exam.ai.system.service.NotificationService;
-import com.exam.ai.user.mapper.SysUserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * QuestionBankService 接口，定义当前业务模块对外提供的服务契约。
@@ -78,11 +57,10 @@ public interface QuestionBankService {
     /**
      * 创建业务数据并完成必要的状态初始化。
      * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public QuestionCategoryResponse createCategory(CreateQuestionCategoryRequest request, UserPrincipal principal);
+    public QuestionCategoryResponse createCategory(CreateQuestionCategoryRequest request);
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
      * @param page 业务参数，参与当前方法的校验、查询或状态变更。
@@ -91,11 +69,10 @@ public interface QuestionBankService {
      * @param questionType 业务参数，参与当前方法的校验、查询或状态变更。
      * @param state 业务参数，参与当前方法的校验、查询或状态变更。
      * @param tagId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public IPage<QuestionResponse> listQuestions(long page, long size, Long categoryId, String questionType, String state, Long tagId, UserPrincipal principal);
+    public IPage<QuestionResponse> listQuestions(long page, long size, Long categoryId, String questionType, String state, Long tagId);
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
      * @param id 业务参数，参与当前方法的校验、查询或状态变更。
@@ -106,20 +83,18 @@ public interface QuestionBankService {
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
      * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public QuestionResponse detail(Long id, UserPrincipal principal);
+    public QuestionResponse detailForCurrentUser(Long id);
     /**
      * 执行当前业务步骤，维护调用方需要的处理结果。
      * @param id 业务参数，参与当前方法的校验、查询或状态变更。
      * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public QuestionResponse review(Long id, ReviewQuestionRequest request, UserPrincipal principal);
+    public QuestionResponse review(Long id, ReviewQuestionRequest request);
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
      * @param limit 业务参数，参与当前方法的校验、查询或状态变更。

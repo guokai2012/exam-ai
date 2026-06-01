@@ -3,6 +3,7 @@ package com.exam.ai.security;
 import com.exam.ai.common.result.ApiResponse;
 import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.mapper.SysUserMapper;
+import com.exam.ai.util.CurrentUserUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,8 +13,6 @@ import java.io.IOException;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -53,8 +52,8 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal) {
+        UserPrincipal principal = CurrentUserUtils.getCurrentUser().orElse(null);
+        if (principal != null) {
             SysUser user = userMapper.selectById(principal.userId());
             if (user != null && Boolean.TRUE.equals(user.getForcePasswordChange()) && !isAllowed(request.getRequestURI())) {
                 response.setStatus(HttpStatus.FORBIDDEN.value());

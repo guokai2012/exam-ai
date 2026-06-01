@@ -31,8 +31,8 @@ import com.exam.ai.question.dto.QuestionImportResult;
 import com.exam.ai.question.vo.QuestionResponse;
 import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
 import com.exam.ai.question.service.QuestionBankService;
-import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.service.SystemConfigService;
+import com.exam.ai.util.CurrentUserUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -129,7 +129,8 @@ public class DocumentServiceImpl implements DocumentService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public DocumentResponse upload(MultipartFile file, UserPrincipal principal) {
+    public DocumentResponse upload(MultipartFile file) {
+        Long currentUserId = CurrentUserUtils.currentUserId();
         DocumentFileService.StoredDocument stored = fileService.store(file);
         // 文件服务已完成类型、大小、落盘和文本提取校验，这里只负责业务元数据入库。
         ExamDocument document = new ExamDocument();
@@ -141,7 +142,7 @@ public class DocumentServiceImpl implements DocumentService {
         document.setStoragePath(stored.storagePath());
         document.setExtractedText(stored.extractedText());
         document.setStatus(DocumentStatus.UPLOADED);
-        document.setUploadedBy(principal.userId());
+        document.setUploadedBy(currentUserId);
         documentMapper.insert(document);
         return toDocumentResponse(documentMapper.selectById(document.getId()), null);
     }
@@ -154,9 +155,9 @@ public class DocumentServiceImpl implements DocumentService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public IPage<DocumentResponse> list(long page, long size, UserPrincipal principal) {
+    public IPage<DocumentResponse> list(long page, long size) {
         LambdaQueryWrapper<ExamDocument> query = new LambdaQueryWrapper<ExamDocument>()
-                .eq(ExamDocument::getUploadedBy, principal.userId())
+                .eq(ExamDocument::getUploadedBy, CurrentUserUtils.currentUserId())
                 .orderByDesc(ExamDocument::getId);
         return documentMapper.selectPage(Page.of(page, size), query)
                 .convert(document -> toDocumentResponse(document, latestSummary(document.getId())));
@@ -169,8 +170,8 @@ public class DocumentServiceImpl implements DocumentService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public DocumentResponse detail(Long id, UserPrincipal principal) {
-        ExamDocument document = requireVisibleDocument(id, principal);
+    public DocumentResponse detail(Long id) {
+        ExamDocument document = requireVisibleDocument(id);
         return toDocumentResponse(document, latestSummary(id));
     }
 
@@ -181,8 +182,8 @@ public class DocumentServiceImpl implements DocumentService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public DocumentContentResponse content(Long id, UserPrincipal principal) {
-        ExamDocument document = requireVisibleDocument(id, principal);
+    public DocumentContentResponse content(Long id) {
+        ExamDocument document = requireVisibleDocument(id);
         return new DocumentContentResponse(id, document.getExtractedText());
     }
 
@@ -194,8 +195,9 @@ public class DocumentServiceImpl implements DocumentService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public AnalysisResponse analyze(Long documentId, UserPrincipal principal) {
-        ExamDocument document = requireVisibleDocument(documentId, principal);
+    public AnalysisResponse analyze(Long documentId) {
+        Long currentUserId = CurrentUserUtils.currentUserId();
+        ExamDocument document = requireVisibleDocument(documentId);
         if (!List.of(DocumentStatus.UPLOADED, DocumentStatus.PARSE_FAILED, DocumentStatus.PARSE_PARTIAL_FAILED).contains(document.getStatus())) {
             throw BusinessException.badRequest("当前文档状态不允许 AI 解析");
         }
@@ -205,11 +207,11 @@ public class DocumentServiceImpl implements DocumentService {
         document.setStatus(DocumentStatus.PARSING);
         documentMapper.updateById(document);
         // 已存在失败或部分失败批次时复用原分片，避免重复创建来源记录。
-        ExamDocumentAnalysis analysis = analysisForParsing(document, principal.userId());
+        ExamDocumentAnalysis analysis = analysisForParsing(document, currentUserId);
         analysis.setStatus(AnalysisStatus.PROCESSING);
         analysis.setErrorMessage(null);
         analysisMapper.updateById(analysis);
-        processPendingChunks(document, analysis, principal.userId());
+        processPendingChunks(document, analysis, currentUserId);
         finishAnalysis(document, analysis);
         return toAnalysisResponse(analysisMapper.selectById(analysis.getId()));
     }
@@ -221,8 +223,8 @@ public class DocumentServiceImpl implements DocumentService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public AnalysisResponse latestAnalysis(Long documentId, UserPrincipal principal) {
-        requireVisibleDocument(documentId, principal);
+    public AnalysisResponse latestAnalysis(Long documentId) {
+        requireVisibleDocument(documentId);
         ExamDocumentAnalysis analysis = latestAnalysisEntity(documentId);
         if (analysis == null) {
             throw BusinessException.badRequest("暂无分析结果");
@@ -455,12 +457,12 @@ public class DocumentServiceImpl implements DocumentService {
      * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      */
-    private ExamDocument requireVisibleDocument(Long id, UserPrincipal principal) {
+    private ExamDocument requireVisibleDocument(Long id) {
         ExamDocument document = documentMapper.selectById(id);
         if (document == null) {
             throw BusinessException.badRequest("文档不存在");
         }
-        if (!document.getUploadedBy().equals(principal.userId())) {
+        if (!document.getUploadedBy().equals(CurrentUserUtils.currentUserId())) {
             throw BusinessException.forbidden();
         }
         return document;

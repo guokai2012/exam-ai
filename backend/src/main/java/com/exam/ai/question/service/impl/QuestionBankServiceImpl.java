@@ -27,8 +27,8 @@ import com.exam.ai.question.mapper.ExamQuestionCategoryMapper;
 import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
 import com.exam.ai.question.mapper.ExamQuestionTagMapper;
 import com.exam.ai.question.mapper.ExamQuestionTagRelationMapper;
-import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.service.NotificationService;
+import com.exam.ai.util.CurrentUserUtils;
 import com.exam.ai.user.mapper.SysUserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -209,8 +209,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public QuestionCategoryResponse createCategory(CreateQuestionCategoryRequest request, UserPrincipal principal) {
-        ExamQuestionCategory category = findOrCreateCategory(request.categoryName(), principal.userId());
+    public QuestionCategoryResponse createCategory(CreateQuestionCategoryRequest request) {
+        ExamQuestionCategory category = findOrCreateCategory(request.categoryName(), CurrentUserUtils.currentUserId());
         if (request.description() != null && !request.description().isBlank()) {
             category.setDescription(request.description());
             categoryMapper.updateById(category);
@@ -231,9 +231,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public IPage<QuestionResponse> listQuestions(long page, long size, Long categoryId, String questionType,
-                                                 String state, Long tagId, UserPrincipal principal) {
+                                                 String state, Long tagId) {
         LambdaQueryWrapper<ExamQuestionBank> query = new LambdaQueryWrapper<ExamQuestionBank>()
-                .eq(ExamQuestionBank::getCreatedBy, principal.userId())
+                .eq(ExamQuestionBank::getCreatedBy, CurrentUserUtils.currentUserId())
                 .orderByDesc(ExamQuestionBank::getId);
         if (categoryId != null) {
             query.eq(ExamQuestionBank::getCategoryId, categoryId);
@@ -267,9 +267,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public QuestionResponse detail(Long id, UserPrincipal principal) {
+    public QuestionResponse detailForCurrentUser(Long id) {
         ExamQuestionBank question = requireQuestion(id);
-        requireOwner(question, principal);
+        requireOwner(question);
         return toQuestionResponse(question);
     }
 
@@ -282,9 +282,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public QuestionResponse review(Long id, ReviewQuestionRequest request, UserPrincipal principal) {
+    public QuestionResponse review(Long id, ReviewQuestionRequest request) {
         ExamQuestionBank question = requireQuestion(id);
-        requireOwner(question, principal);
+        requireOwner(question);
         if (request.categoryId() != null && !request.categoryId().equals(question.getCategoryId())) {
             // 移动分类时必须重新做目标分类下的题干去重检查。
             moveCategoryWithDuplicateCheck(question, request.categoryId());
@@ -293,7 +293,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         // 状态变化统一通过状态机校验，避免 Controller 或前端绕过允许的业务流转。
         QuestionState next = stateTransitionService.transit(id, question.getState(), event);
         question.setState(next.name());
-        question.setReviewedBy(principal.userId());
+        question.setReviewedBy(CurrentUserUtils.currentUserId());
         question.setReviewedAt(LocalDateTime.now());
         question.setReviewReason(request.reason());
         question.setTagErrorMessage(null);
@@ -474,8 +474,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @param question 业务参数，参与当前方法的校验、查询或状态变更。
      * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      */
-    private void requireOwner(ExamQuestionBank question, UserPrincipal principal) {
-        if (!principal.userId().equals(question.getCreatedBy())) {
+    private void requireOwner(ExamQuestionBank question) {
+        if (!CurrentUserUtils.currentUserId().equals(question.getCreatedBy())) {
             throw BusinessException.forbidden();
         }
     }

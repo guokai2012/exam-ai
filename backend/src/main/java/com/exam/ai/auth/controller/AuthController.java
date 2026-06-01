@@ -14,9 +14,7 @@ import com.exam.ai.auth.service.RateLimitService;
 import com.exam.ai.common.result.ApiResponse;
 import com.exam.ai.common.config.SecurityProperties;
 import com.exam.ai.security.ClientIp;
-import com.exam.ai.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +24,6 @@ import java.time.Duration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -148,19 +145,17 @@ public class AuthController {
     @PostMapping("/logout")
     @PreAuthorize("hasAuthority('auth:logout')")
     @Operation(summary = "退出登录", description = "撤销当前 refresh token 并清空刷新令牌 Cookie。")
-    public ApiResponse<Void> logout(@Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
-                                    @RequestBody(required = false) LogoutRequest request,
+    public ApiResponse<Void> logout(@RequestBody(required = false) LogoutRequest request,
                                     @CookieValue(name = "${app.security.refresh-cookie-name}", required = false) String cookieToken,
                                     HttpServletResponse servletResponse) {
         String refreshToken = request != null && request.refreshToken() != null ? request.refreshToken() : cookieToken;
-        authService.logout(principal, refreshToken);
+        authService.logout(refreshToken);
         setRefreshCookie(servletResponse, "", Duration.ZERO);
         return ApiResponse.ok();
     }
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @param request 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
@@ -168,23 +163,21 @@ public class AuthController {
     @PostMapping("/change-password")
     @PreAuthorize("hasAuthority('password:change')")
     @Operation(summary = "修改密码", description = "登录用户修改密码，成功后更新密码状态。")
-    public ApiResponse<Void> changePassword(@Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
-                                            @Valid @RequestBody ChangePasswordRequest request) {
-        authService.changePassword(principal, request);
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
         return ApiResponse.ok();
     }
 
     /**
      * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @GetMapping("/me")
     @PreAuthorize("hasAuthority('auth:me')")
     @Operation(summary = "当前用户信息", description = "返回当前登录用户的基础资料、角色、权限和是否强制改密。")
-    public ApiResponse<CurrentUserResponse> me(@Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
-        return ApiResponse.ok(authService.currentUser(principal));
+    public ApiResponse<CurrentUserResponse> me() {
+        return ApiResponse.ok(authService.currentUser());
     }
 
     /**

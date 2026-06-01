@@ -3,6 +3,7 @@ package com.exam.ai.security;
 import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.entity.UserStatus;
 import com.exam.ai.user.mapper.SysUserMapper;
+import com.exam.ai.util.CurrentUserUtils;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -49,11 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String token = resolveBearerToken(request);
-        if (token != null) {
-            authenticate(token);
+        try {
+            CurrentUserUtils.clear();
+            String token = resolveBearerToken(request);
+            if (token != null) {
+                authenticate(token);
+            }
+            filterChain.doFilter(request, response);
+        } finally {
+            CurrentUserUtils.clear();
+            SecurityContextHolder.clearContext();
         }
-        filterChain.doFilter(request, response);
     }
 
     /**
@@ -81,7 +88,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            CurrentUserUtils.setCurrentUser(principal);
         } catch (JwtException | IllegalArgumentException ignored) {
+            CurrentUserUtils.clear();
             SecurityContextHolder.clearContext();
         }
     }

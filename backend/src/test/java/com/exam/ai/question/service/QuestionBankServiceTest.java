@@ -21,7 +21,9 @@ import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.system.service.NotificationService;
 import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.mapper.SysUserMapper;
+import com.exam.ai.util.CurrentUserUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -127,7 +129,8 @@ class QuestionBankServiceTest {
 
         UserPrincipal teacher = new UserPrincipal(200L, "teacher", "session", java.util.List.of("TEACHER"), java.util.List.of());
 
-        assertThatThrownBy(() -> questionBankService.review(4L, new ReviewQuestionRequest(true, null, "通过"), teacher))
+        assertThatThrownBy(() -> CurrentUserUtils.runAs(teacher,
+                (Callable<?>) () -> questionBankService.review(4L, new ReviewQuestionRequest(true, null, "通过"))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("无权访问");
     }

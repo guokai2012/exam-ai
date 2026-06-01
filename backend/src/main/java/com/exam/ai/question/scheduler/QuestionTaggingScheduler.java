@@ -1,6 +1,8 @@
 package com.exam.ai.question.scheduler;
 
 import com.exam.ai.question.service.QuestionTaggingService;
+import com.exam.ai.util.CurrentUserUtils;
+import com.exam.ai.util.SystemUserModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -32,7 +34,7 @@ public class QuestionTaggingScheduler {
     public void tagPendingQuestions() {
         try {
             // 定时任务只负责调度入口，具体业务状态流转集中在 service 中处理。
-            questionTaggingService.tagPendingQuestions();
+            CurrentUserUtils.runAsSystem(SystemUserModule.QUESTION, questionTaggingService::tagPendingQuestions);
         } catch (Exception ex) {
             log.warn("题目标签定时任务执行失败", ex);
         }

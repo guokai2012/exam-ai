@@ -2,6 +2,9 @@ package com.exam.ai.user.scheduler;
 
 import com.exam.ai.user.vo.PermissionScanResponse;
 import com.exam.ai.user.service.AdminPermissionService;
+import com.exam.ai.util.CurrentUserUtils;
+import com.exam.ai.util.SystemUserModule;
+import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,7 +43,8 @@ public class PermissionScanScheduler {
     public void syncControllerPermissions() {
         try {
             // 扫描结果会自动新增、更新和删除扫描来源的动作权限。
-            PermissionScanResponse result = permissionService.scanControllerPermissions();
+            PermissionScanResponse result = CurrentUserUtils.runAsSystem(SystemUserModule.USER,
+                    (Callable<PermissionScanResponse>) permissionService::scanControllerPermissions);
             log.info("权限扫描完成，新增 {}，更新 {}，删除 {}", result.created(), result.updated(), result.deleted());
         } catch (Exception ex) {
             log.warn("权限扫描失败", ex);

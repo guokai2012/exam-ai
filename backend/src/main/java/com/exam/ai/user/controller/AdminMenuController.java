@@ -1,7 +1,6 @@
 package com.exam.ai.user.controller;
 
 import com.exam.ai.common.result.ApiResponse;
-import com.exam.ai.security.UserPrincipal;
 import com.exam.ai.user.vo.MenuResponse;
 import com.exam.ai.user.dto.SaveMenuRequest;
 import com.exam.ai.user.service.MenuService;
@@ -11,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,14 +39,13 @@ public class AdminMenuController {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @GetMapping("/api/menus/me")
     @Operation(summary = "当前用户菜单树", description = "按当前用户权限返回可见菜单树。")
-    public ApiResponse<List<MenuResponse>> currentUserMenus(@Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
-        return ApiResponse.ok(menuService.currentUserMenus(principal));
+    public ApiResponse<List<MenuResponse>> currentUserMenus() {
+        return ApiResponse.ok(menuService.currentUserMenus());
     }
 
     /**

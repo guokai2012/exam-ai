@@ -17,6 +17,7 @@ import com.exam.ai.security.JwtService;
 import com.exam.ai.security.RedisKeys;
 import com.exam.ai.security.TokenHashService;
 import com.exam.ai.security.UserPrincipal;
+import com.exam.ai.util.CurrentUserUtils;
 import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.entity.UserStatus;
 import com.exam.ai.user.mapper.SysUserMapper;
@@ -183,10 +184,8 @@ public class AuthServiceImpl implements AuthService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void logout(UserPrincipal principal, String refreshToken) {
-        if (principal == null) {
-            throw BusinessException.unauthorized();
-        }
+    public void logout(String refreshToken) {
+        UserPrincipal principal = CurrentUserUtils.requireCurrentUser();
         redisTemplate.delete(RedisKeys.session(principal.userId()));
         if (refreshToken != null && !refreshToken.isBlank()) {
             String hash = tokenHashService.hash(refreshToken);
@@ -205,7 +204,8 @@ public class AuthServiceImpl implements AuthService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public CurrentUserResponse currentUser(UserPrincipal principal) {
+    public CurrentUserResponse currentUser() {
+        UserPrincipal principal = CurrentUserUtils.requireCurrentUser();
         SysUser user = userMapper.selectById(principal.userId());
         if (user == null || !Integer.valueOf(UserStatus.ENABLED).equals(user.getStatus())) {
             throw BusinessException.unauthorized();
@@ -227,10 +227,8 @@ public class AuthServiceImpl implements AuthService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void changePassword(UserPrincipal principal, ChangePasswordRequest request) {
-        if (principal == null) {
-            throw BusinessException.unauthorized();
-        }
+    public void changePassword(ChangePasswordRequest request) {
+        UserPrincipal principal = CurrentUserUtils.requireCurrentUser();
         SysUser user = userMapper.selectById(principal.userId());
         if (user == null || !Integer.valueOf(UserStatus.ENABLED).equals(user.getStatus())) {
             throw BusinessException.unauthorized();

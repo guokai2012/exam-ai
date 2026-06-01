@@ -4,7 +4,7 @@ import com.exam.ai.user.service.AdminPermissionService;
 import com.exam.ai.user.service.MenuService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.exam.ai.common.exception.BusinessException;
-import com.exam.ai.security.UserPrincipal;
+import com.exam.ai.util.CurrentUserUtils;
 import com.exam.ai.user.entity.SysMenu;
 import com.exam.ai.user.vo.MenuResponse;
 import com.exam.ai.user.dto.SaveMenuRequest;
@@ -55,8 +55,8 @@ public class MenuServiceImpl implements MenuService {
      * @return 当前业务步骤的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public List<MenuResponse> currentUserMenus(UserPrincipal principal) {
-        Set<String> permissions = Set.copyOf(principal.permissions());
+    public List<MenuResponse> currentUserMenus() {
+        Set<String> permissions = Set.copyOf(CurrentUserUtils.requireCurrentUser().permissions());
         List<SysMenu> menus = menuMapper.selectList(new LambdaQueryWrapper<SysMenu>()
                 .eq(SysMenu::getStatus, 1)
                 .orderByAsc(SysMenu::getSortOrder)
