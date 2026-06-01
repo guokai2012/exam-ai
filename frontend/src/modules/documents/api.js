@@ -14,6 +14,10 @@ export function getDocumentContent(id) {
   return api.get(`/api/documents/${id}/content`)
 }
 
+export function getDocumentDetail(id) {
+  return api.get(`/api/documents/${id}`)
+}
+
 export function analyzeDocument(id) {
   return api.post(`/api/documents/${id}/analysis`)
 }

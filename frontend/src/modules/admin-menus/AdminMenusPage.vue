@@ -33,7 +33,11 @@
         <el-form-item label="父级 ID"><el-input v-model="form.parentId" placeholder="根菜单留空" /></el-form-item>
         <el-form-item label="菜单名称" prop="menuName"><el-input v-model="form.menuName" /></el-form-item>
         <el-form-item label="路径" prop="path"><el-input v-model="form.path" /></el-form-item>
-        <el-form-item label="组件标识" prop="component"><el-input v-model="form.component" /></el-form-item>
+        <el-form-item label="组件标识" prop="component">
+          <el-select v-model="form.component" filterable placeholder="选择已存在的前端组件">
+            <el-option v-for="option in componentOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="图标"><el-input v-model="form.icon" /></el-form-item>
         <el-form-item label="权限码"><el-input v-model="form.permissionCode" placeholder="无权限限制可留空" /></el-form-item>
         <el-form-item label="排序"><el-input v-model.number="form.sortOrder" /></el-form-item>
@@ -61,6 +65,19 @@ const menus = ref([])
 const visible = ref(false)
 const formRef = ref(null)
 const form = reactive({ id: null, parentId: '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: 1 })
+const componentOptions = [
+  { label: '菜单分组', value: 'MenuGroup' },
+  { label: '我的文档', value: 'DocumentsPage' },
+  { label: '可用题', value: 'AvailableQuestionsPage' },
+  { label: '待确认题', value: 'PendingConfirmQuestionsPage' },
+  { label: '站内通知', value: 'NotificationsPage' },
+  { label: '用户详情', value: 'ProfilePage' },
+  { label: '系统配置', value: 'SystemConfigPage' },
+  { label: '用户管理', value: 'AdminUsersPage' },
+  { label: '角色管理', value: 'AdminRolesPage' },
+  { label: '权限管理', value: 'AdminPermissionsPage' },
+  { label: '菜单管理', value: 'AdminMenusPage' }
+]
 const formRules = {
   menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
   path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
@@ -84,6 +101,10 @@ function openEdit(row) {
 }
 async function save() {
   await formRef.value?.validate()
+  if (!componentOptions.some(option => option.value === form.component)) {
+    ElMessage.error('请选择当前前端已存在的组件标识')
+    return
+  }
   try {
     const payload = {
       parentId: form.parentId ? Number(form.parentId) : null,

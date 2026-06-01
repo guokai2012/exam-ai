@@ -40,6 +40,7 @@
                 <el-dropdown-item command="theme:green">绿色</el-dropdown-item>
                 <el-dropdown-item command="theme:dark">深色</el-dropdown-item>
                 <el-dropdown-item divided command="profile">用户详情</el-dropdown-item>
+                <el-dropdown-item command="change-password">修改密码</el-dropdown-item>
                 <el-dropdown-item command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -139,6 +140,10 @@ async function handleSettingCommand(command) {
   }
   if (command === 'profile') {
     await router.push('/profile')
+    return
+  }
+  if (command === 'change-password') {
+    await router.push('/change-password')
     return
   }
   if (command === 'logout') {

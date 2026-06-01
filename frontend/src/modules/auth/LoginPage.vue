@@ -40,6 +40,7 @@
           </div>
         </el-form-item>
         <el-button class="full-button" :loading="submitting" type="primary" @click="submitLogin">登录</el-button>
+        <el-button class="full-button" text @click="router.push('/register')">注册账号</el-button>
       </el-form>
       <p class="status">{{ statusText }}</p>
     </el-card>

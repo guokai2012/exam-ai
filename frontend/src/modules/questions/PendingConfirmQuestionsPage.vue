@@ -13,7 +13,7 @@
         </div>
         <el-form class="filter-form" inline>
           <el-form-item label="分类">
-            <el-select v-model="filters.categoryId" clearable placeholder="全部分类" @change="loadQuestions">
+            <el-select v-model="filters.categoryId" clearable placeholder="全部分类" @change="handleFilterChange">
               <el-option v-for="category in categories" :key="category.id" :label="category.categoryName" :value="category.id" />
             </el-select>
           </el-form-item>
@@ -34,6 +34,7 @@
             <el-select v-model="reviewDrafts[question.id]" placeholder="选择分类">
               <el-option v-for="category in categories" :key="category.id" :label="category.categoryName" :value="category.id" />
             </el-select>
+            <el-button plain @click="openQuestionDetail(question)">详情</el-button>
             <el-button type="primary" @click="submitReview(question, true)">通过</el-button>
             <el-button @click="submitReview(question, false)">驳回</el-button>
           </div>
@@ -41,7 +42,19 @@
         </el-card>
         <el-empty v-if="questions.length === 0" description="暂无待确认题" />
       </div>
+      <el-pagination
+        class="table-pagination"
+        background
+        layout="total, sizes, prev, pager, next"
+        :current-page="pagination.page"
+        :page-size="pagination.size"
+        :page-sizes="[10, 20, 50]"
+        :total="pagination.total"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
     </el-card>
+    <QuestionDetailDialog v-model="detailVisible" :question="detailQuestion" />
   </section>
 </template>
 
@@ -56,17 +69,22 @@ import {
   ElFormItem,
   ElMessage,
   ElOption,
+  ElPagination,
   ElRate,
   ElSelect,
   ElTag
 } from 'element-plus'
-import { listCategories, listQuestions as fetchQuestions, reviewQuestion } from './api'
+import { getQuestion, listCategories, listQuestions as fetchQuestions, reviewQuestion } from './api'
 import { stateLabel, typeLabel } from '../../shared/formatters'
+import QuestionDetailDialog from './QuestionDetailDialog.vue'
 
 const categories = ref([])
 const questions = ref([])
 const filters = reactive({ categoryId: '' })
+const pagination = reactive({ page: 1, size: 20, total: 0 })
 const reviewDrafts = reactive({})
+const detailVisible = ref(false)
+const detailQuestion = ref(null)
 
 async function loadCategories() {
   try {
@@ -78,13 +96,44 @@ async function loadCategories() {
 
 async function loadQuestions() {
   try {
-    const result = await fetchQuestions({ categoryId: filters.categoryId, state: 'PARSE_PENDING_CONFIRM' })
+    const result = await fetchQuestions({
+      categoryId: filters.categoryId,
+      state: 'PARSE_PENDING_CONFIRM',
+      page: pagination.page,
+      size: pagination.size
+    })
     questions.value = result?.records || []
+    pagination.total = Number(result?.total || 0)
     for (const question of questions.value) {
       reviewDrafts[question.id] = question.categoryId
     }
   } catch (error) {
     ElMessage.error(error.message || '待确认题加载失败')
+  }
+}
+
+function handleFilterChange() {
+  pagination.page = 1
+  loadQuestions()
+}
+
+function handlePageChange(page) {
+  pagination.page = page
+  loadQuestions()
+}
+
+function handleSizeChange(size) {
+  pagination.size = size
+  pagination.page = 1
+  loadQuestions()
+}
+
+async function openQuestionDetail(question) {
+  try {
+    detailQuestion.value = await getQuestion(question.id)
+    detailVisible.value = true
+  } catch (error) {
+    ElMessage.error(error.message || '题目详情加载失败')
   }
 }
 

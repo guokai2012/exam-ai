@@ -1,4 +1,7 @@
-import { clearAuthTokens, getAccessToken } from '../shared/authToken'
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '../shared/authToken'
+
+let refreshPromise = null
+const AUTH_REFRESH_SKIP_PATHS = ['/api/auth/captcha', '/api/auth/register', '/api/auth/login', '/api/auth/refresh']
 
 export class ApiError extends Error {
   constructor(message, status, code) {
@@ -7,6 +10,36 @@ export class ApiError extends Error {
     this.status = status
     this.code = code
   }
+}
+
+function redirectToLogin() {
+  clearAuthTokens()
+  if (window.location.pathname !== '/login') {
+    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
+  }
+}
+
+async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(getRefreshToken() ? { refreshToken: getRefreshToken() } : {})
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new ApiError(payload?.message || '登录已过期', response.status, payload?.code)
+        }
+        setAuthTokens(payload?.data)
+        return payload?.data
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
 }
 
 async function requestPayload(path, options = {}) {
@@ -31,11 +64,16 @@ async function requestPayload(path, options = {}) {
 
   const response = await fetch(path, init)
   const payload = await response.json().catch(() => null)
-  if (response.status === 401) {
-    clearAuthTokens()
-    if (window.location.pathname !== '/login') {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
+  if (response.status === 401 && !options.skipAuthRefresh && !options.retried && !AUTH_REFRESH_SKIP_PATHS.includes(path)) {
+    try {
+      await refreshAccessToken()
+      return requestPayload(path, { ...options, retried: true })
+    } catch {
+      redirectToLogin()
     }
+  }
+  if (response.status === 401) {
+    redirectToLogin()
   }
   if (!response.ok) {
     if (payload?.code === 'PASSWORD_CHANGE_REQUIRED' && window.location.pathname !== '/change-password') {

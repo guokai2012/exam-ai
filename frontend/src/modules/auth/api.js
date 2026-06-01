@@ -8,6 +8,14 @@ export function login(payload) {
   return api.post('/api/auth/login', payload)
 }
 
+export function register(payload) {
+  return api.post('/api/auth/register', payload)
+}
+
+export function refresh(refreshToken) {
+  return api.post('/api/auth/refresh', refreshToken ? { refreshToken } : {})
+}
+
 export function logout(refreshToken) {
   return api.post('/api/auth/logout', refreshToken ? { refreshToken } : {})
 }

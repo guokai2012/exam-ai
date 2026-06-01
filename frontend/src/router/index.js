@@ -7,6 +7,7 @@ const AdminPermissionsPage = () => import('../modules/admin-permissions/AdminPer
 const AdminRolesPage = () => import('../modules/admin-roles/AdminRolesPage.vue')
 const AdminUsersPage = () => import('../modules/admin-users/AdminUsersPage.vue')
 const LoginPage = () => import('../modules/auth/LoginPage.vue')
+const RegisterPage = () => import('../modules/auth/RegisterPage.vue')
 const ChangePasswordPage = () => import('../modules/change-password/ChangePasswordPage.vue')
 const DocumentsPage = () => import('../modules/documents/DocumentsPage.vue')
 const NotificationsPage = () => import('../modules/notifications/NotificationsPage.vue')
@@ -23,6 +24,11 @@ const router = createRouter({
       name: 'login',
       component: LoginPage,
       meta: { public: true, title: '登录' }
+    },
+    {
+      path: '/register',
+      component: RegisterPage,
+      meta: { public: true, title: '注册' }
     },
     {
       path: '/change-password',

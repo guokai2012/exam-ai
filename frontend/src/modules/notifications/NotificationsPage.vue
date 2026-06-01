@@ -22,25 +22,49 @@
         <el-button v-if="!notification.read" plain @click="readNotification(notification)">标记已读</el-button>
       </el-card>
       <el-empty v-if="notifications.length === 0" description="暂无系统通知" />
+      <el-pagination
+        class="table-pagination"
+        background
+        layout="total, sizes, prev, pager, next"
+        :current-page="pagination.page"
+        :page-size="pagination.size"
+        :page-sizes="[10, 20, 50]"
+        :total="pagination.total"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
     </el-card>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { ElButton, ElCard, ElEmpty, ElMessage, ElTag } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+import { ElButton, ElCard, ElEmpty, ElMessage, ElPagination, ElTag } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { listNotifications as fetchNotifications, markNotificationRead } from './api'
 
 const notifications = ref([])
+const pagination = reactive({ page: 1, size: 20, total: 0 })
 
 async function loadNotifications() {
   try {
-    const result = await fetchNotifications()
+    const result = await fetchNotifications(pagination.page, pagination.size)
     notifications.value = result?.records || []
+    pagination.total = Number(result?.total || 0)
   } catch (error) {
     ElMessage.error(error.message || '通知加载失败')
   }
+}
+
+function handlePageChange(page) {
+  pagination.page = page
+  loadNotifications()
+}
+
+function handleSizeChange(size) {
+  pagination.size = size
+  pagination.page = 1
+  loadNotifications()
 }
 
 async function readNotification(notification) {

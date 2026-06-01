@@ -358,6 +358,15 @@ pre {
   margin: 10px 0;
 }
 
+.table-pagination {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.detail-descriptions {
+  margin: 14px 0 18px;
+}
+
 .config-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 120px auto;

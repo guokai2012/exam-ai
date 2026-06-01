@@ -13,7 +13,7 @@
         </div>
         <div class="header-actions">
           <el-input v-model="keyword" clearable placeholder="搜索账号/昵称" @keyup.enter="loadUsers" />
-          <el-button :icon="Search" @click="loadUsers">搜索</el-button>
+          <el-button :icon="Search" @click="handleSearch">搜索</el-button>
           <el-button type="primary" @click="openCreate">新建用户</el-button>
         </div>
       </div>
@@ -41,6 +41,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        class="table-pagination"
+        background
+        layout="total, sizes, prev, pager, next"
+        :current-page="pagination.page"
+        :page-size="pagination.size"
+        :page-sizes="[10, 20, 50]"
+        :total="pagination.total"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
     </el-card>
 
     <el-dialog v-model="editVisible" :title="editingUser?.id ? '编辑用户' : '新建用户'" width="520px">
@@ -98,7 +109,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElPagination, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { createUser, disableUser, kickUser, listUsers, resetPassword, updateUser } from './api'
 import { listRoles } from '../admin-roles/api'
@@ -106,6 +117,7 @@ import { listRoles } from '../admin-roles/api'
 const keyword = ref('')
 const users = ref([])
 const roles = ref([])
+const pagination = reactive({ page: 1, size: 20, total: 0 })
 const editVisible = ref(false)
 const resetVisible = ref(false)
 const editingUser = ref(null)
@@ -143,11 +155,28 @@ const resetRules = {
 
 async function loadUsers() {
   try {
-    const result = await listUsers(keyword.value)
+    const result = await listUsers(keyword.value, pagination.page, pagination.size)
     users.value = result?.records || []
+    pagination.total = Number(result?.total || 0)
   } catch (error) {
     ElMessage.error(error.message || '用户列表加载失败')
   }
+}
+
+function handleSearch() {
+  pagination.page = 1
+  loadUsers()
+}
+
+function handlePageChange(page) {
+  pagination.page = page
+  loadUsers()
+}
+
+function handleSizeChange(size) {
+  pagination.size = size
+  pagination.page = 1
+  loadUsers()
 }
 
 async function loadRoles() {

@@ -38,6 +38,16 @@
           </span>
         </el-button>
         <el-empty v-if="documents.length === 0" description="暂无我的文档" />
+        <el-pagination
+          class="table-pagination"
+          small
+          background
+          layout="prev, pager, next"
+          :current-page="pagination.page"
+          :page-size="pagination.size"
+          :total="pagination.total"
+          @current-change="handlePageChange"
+        />
       </el-card>
 
       <el-card class="analysis-panel" shadow="never">
@@ -57,6 +67,16 @@
               {{ analyzeButtonText(activeDocument.status) }}
             </el-button>
           </div>
+          <el-descriptions class="detail-descriptions" :column="2" border>
+            <el-descriptions-item label="文档 ID">{{ activeDocument.id }}</el-descriptions-item>
+            <el-descriptions-item label="上传人">{{ activeDocument.uploadedBy }}</el-descriptions-item>
+            <el-descriptions-item label="文件类型">{{ activeDocument.fileType }}</el-descriptions-item>
+            <el-descriptions-item label="文件大小">{{ formatSize(activeDocument.fileSize) }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ activeDocument.createdAt || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="最新分析">
+              {{ activeDocument.latestAnalysis?.status ? stateLabel(activeDocument.latestAnalysis.status) : '-' }}
+            </el-descriptions-item>
+          </el-descriptions>
 
           <el-collapse class="preview" @change="loadContent">
             <el-collapse-item title="提取文本预览" name="content">
@@ -117,14 +137,17 @@ import {
   ElCard,
   ElCollapse,
   ElCollapseItem,
+  ElDescriptions,
+  ElDescriptionsItem,
   ElEmpty,
   ElMessage,
+  ElPagination,
   ElRate,
   ElTag,
   ElUpload
 } from 'element-plus'
 import { Refresh, Upload } from '@element-plus/icons-vue'
-import { analyzeDocument, getDocumentContent, latestAnalysis, listDocuments as fetchDocuments, uploadDocument } from './api'
+import { analyzeDocument, getDocumentContent, getDocumentDetail, latestAnalysis, listDocuments as fetchDocuments, uploadDocument } from './api'
 import { analyzeButtonText, canAnalyzeDocument, formatSize, stateLabel, typeLabel } from '../../shared/formatters'
 
 const selectedFile = ref(null)
@@ -134,6 +157,7 @@ const documents = ref([])
 const activeDocument = ref(null)
 const analysis = ref(null)
 const contentPreview = ref('')
+const pagination = ref({ page: 1, size: 10, total: 0 })
 
 function selectFile(uploadFile) {
   selectedFile.value = uploadFile.raw || null
@@ -141,8 +165,9 @@ function selectFile(uploadFile) {
 
 async function loadDocuments() {
   try {
-    const result = await fetchDocuments()
+    const result = await fetchDocuments(pagination.value.page, pagination.value.size)
     documents.value = result?.records || []
+    pagination.value.total = Number(result?.total || 0)
   } catch (error) {
     ElMessage.error(error.message || '文档列表加载失败')
   }
@@ -166,14 +191,20 @@ async function submitUpload() {
 }
 
 async function selectDocument(doc) {
-  activeDocument.value = doc
   analysis.value = null
   contentPreview.value = ''
   try {
+    activeDocument.value = await getDocumentDetail(doc.id)
     analysis.value = await latestAnalysis(doc.id)
   } catch {
     analysis.value = null
+    activeDocument.value = doc
   }
+}
+
+function handlePageChange(page) {
+  pagination.value.page = page
+  loadDocuments()
 }
 
 async function loadContent(activeNames) {

@@ -8,7 +8,10 @@
     <el-card shadow="never">
       <div class="toolbar compact-toolbar">
         <div><p class="eyebrow">Admin Permissions</p><h2>权限管理</h2></div>
-        <el-button type="primary" :loading="scanning" @click="scan">扫描权限</el-button>
+        <div class="header-actions">
+          <el-button @click="openCreate">新建权限</el-button>
+          <el-button type="primary" :loading="scanning" @click="scan">扫描权限</el-button>
+        </div>
       </div>
       <el-table :data="permissions" row-key="id" border default-expand-all>
         <el-table-column prop="permissionName" label="权限名称" min-width="220" />
@@ -34,7 +37,7 @@
         </el-table-column>
       </el-table>
     </el-card>
-    <el-dialog v-model="visible" title="编辑权限" width="520px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑权限' : '新建权限'" width="520px">
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="权限码" prop="permissionCode"><el-input v-model="form.permissionCode" /></el-form-item>
         <el-form-item label="权限名称" prop="permissionName"><el-input v-model="form.permissionName" /></el-form-item>
@@ -51,7 +54,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElTable, ElTableColumn, ElTag } from 'element-plus'
-import { deletePermission, listPermissions, scanPermissions, updatePermission } from './api'
+import { createPermission, deletePermission, listPermissions, scanPermissions, updatePermission } from './api'
 
 const permissions = ref([])
 const visible = ref(false)
@@ -61,6 +64,12 @@ const form = reactive({ id: null, parentId: null, permissionCode: '', permission
 const formRules = {
   permissionCode: [{ required: true, message: '请输入权限码', trigger: 'blur' }],
   permissionName: [{ required: true, message: '请输入权限名称', trigger: 'blur' }]
+}
+
+function openCreate() {
+  Object.assign(form, { id: null, parentId: null, permissionCode: '', permissionName: '', sortOrder: 0 })
+  visible.value = true
+  formRef.value?.clearValidate()
 }
 
 async function load() {
@@ -91,7 +100,8 @@ async function save() {
       permissionName: form.permissionName,
       sortOrder: Number(form.sortOrder || 0)
     }
-    await updatePermission(form.id, payload)
+    if (form.id) await updatePermission(form.id, payload)
+    else await createPermission(payload)
     ElMessage.success('权限已保存')
     visible.value = false
     await load()

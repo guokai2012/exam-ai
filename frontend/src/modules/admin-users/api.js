@@ -1,7 +1,7 @@
 import { api } from '../../api/http'
 
-export function listUsers(keyword = '') {
-  const params = new URLSearchParams({ page: '1', size: '20' })
+export function listUsers(keyword = '', page = 1, size = 20) {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
   if (keyword) params.set('keyword', keyword)
   return api.get(`/api/admin/users?${params.toString()}`)
 }
