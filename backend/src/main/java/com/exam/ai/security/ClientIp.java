@@ -1,0 +1,21 @@
+package com.exam.ai.security;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+public final class ClientIp {
+
+    private ClientIp() {
+    }
+
+    public static String resolve(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
+    }
+}

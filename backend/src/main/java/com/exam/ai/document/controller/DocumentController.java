@@ -1,0 +1,82 @@
+package com.exam.ai.document.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.exam.ai.common.api.ApiResponse;
+import com.exam.ai.document.dto.AnalysisResponse;
+import com.exam.ai.document.dto.DocumentContentResponse;
+import com.exam.ai.document.dto.DocumentResponse;
+import com.exam.ai.document.service.DocumentService;
+import com.exam.ai.security.UserPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/api/documents")
+@Tag(name = "文档分析接口", description = "教师上传文档、查看解析内容并发起 AI 题目分析")
+public class DocumentController {
+
+    private final DocumentService documentService;
+
+    public DocumentController(DocumentService documentService) {
+        this.documentService = documentService;
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('document:upload')")
+    @Operation(summary = "上传文档", description = "上传试题文档，系统解析文本并记录文档状态。")
+    public ApiResponse<DocumentResponse> upload(@Parameter(description = "待上传的文档文件") @RequestParam("file") MultipartFile file,
+                                                @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.upload(file, principal));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('document:list')")
+    @Operation(summary = "分页查询文档", description = "查询当前教师上传的文档分页列表。")
+    public ApiResponse<IPage<DocumentResponse>> list(@Parameter(description = "页码，从 1 开始") @RequestParam(defaultValue = "1") long page,
+                                                     @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") long size,
+                                                     @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.list(page, size, principal));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('document:detail')")
+    @Operation(summary = "文档详情", description = "查询指定文档的基础信息和最新分析摘要。")
+    public ApiResponse<DocumentResponse> detail(@Parameter(description = "文档 ID") @PathVariable Long id,
+                                                @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.detail(id, principal));
+    }
+
+    @GetMapping("/{id}/content")
+    @PreAuthorize("hasAuthority('document:content')")
+    @Operation(summary = "文档解析文本", description = "查询文档解析后的纯文本内容。")
+    public ApiResponse<DocumentContentResponse> content(@Parameter(description = "文档 ID") @PathVariable Long id,
+                                                       @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.content(id, principal));
+    }
+
+    @PostMapping("/{id}/analysis")
+    @PreAuthorize("hasAuthority('document:analyze')")
+    @Operation(summary = "发起 AI 分析", description = "对文档内容进行 AI 题目识别与入库。")
+    public ApiResponse<AnalysisResponse> analyze(@Parameter(description = "文档 ID") @PathVariable Long id,
+                                                 @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.analyze(id, principal));
+    }
+
+    @GetMapping("/{id}/analysis/latest")
+    @PreAuthorize("hasAuthority('document:analysis-latest')")
+    @Operation(summary = "最新分析结果", description = "查询文档最近一次 AI 分析结果。")
+    public ApiResponse<AnalysisResponse> latestAnalysis(@Parameter(description = "文档 ID") @PathVariable Long id,
+                                                        @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(documentService.latestAnalysis(id, principal));
+    }
+}
