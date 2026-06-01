@@ -79,7 +79,7 @@
 - `BaseEntity` 必须统一包含 `id`、`createId`、`createTime`、`updateId`、`updateTime`、`deleted` 字段，并分别映射数据库字段 `id`、`create_id`、`create_time`、`update_id`、`update_time`、`deleted`。
 - `BaseEntity.id` 必须使用 `@TableId(type = IdType.AUTO)`；`deleted` 必须作为 MyBatis-Plus 逻辑删除字段，实体字段类型使用 `Long`，新增实体不得再使用 `is_deleted` 作为逻辑删除列。
 - `deleted` 逻辑删除取值必须统一为：未删除数据写入 `0`，删除数据写入当前记录 `id`；唯一索引必须包含 `deleted` 字段，以便逻辑删除后同一业务唯一值可重新创建。
-- `deleted` 的未删除值与删除值必须通过 MyBatis-Plus 全局逻辑删除配置、`@TableLogic(value = "0", delval = "id")` 或项目统一的 MyBatis-Plus 配置类完成，禁止在各业务 Service 中手写逻辑删除 SQL。
+- `deleted` 的未删除值与删除值必须通过 MyBatis-Plus 全局逻辑删除配置完成，禁止在各业务 Service 中手写逻辑删除 SQL。
 - `createId`、`updateId`、`createTime`、`updateTime` 必须通过 MyBatis-Plus 自动填充机制维护；填充当前用户 ID 时必须统一使用 `CurrentUserUtils.currentUserId()`。
 - 实体类必须使用 `@TableName("表名")`。
 - 字段映射优先使用 `@TableField("字段名")` 明确声明。
