@@ -81,7 +81,7 @@ class QuestionBankServiceTest {
         question.setId(2L);
         question.setState(QuestionState.TAG_PROCESSING.name());
         question.setStem("Java 中 List 和 Set 的区别是什么？");
-        question.setCreatedBy(9L);
+        question.setCreateId(9L);
         question.setTagRetryCount(3);
         when(questionMapper.selectById(2L)).thenReturn(question);
         when(userMapper.selectById(9L)).thenReturn(new SysUser());
@@ -124,7 +124,7 @@ class QuestionBankServiceTest {
     void shouldRejectReviewForOtherTeacherQuestion() {
         ExamQuestionBank question = new ExamQuestionBank();
         question.setId(4L);
-        question.setCreatedBy(100L);
+        question.setCreateId(100L);
         when(questionMapper.selectById(4L)).thenReturn(question);
 
         UserPrincipal teacher = new UserPrincipal(200L, "teacher", "session", java.util.List.of("TEACHER"), java.util.List.of());

@@ -1,22 +1,21 @@
 package com.exam.ai.document.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.exam.ai.common.base.BaseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * ExamDocumentAnalysisChunk 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Schema(description = "文档分析分块实体")
 @TableName("exam_document_analysis_chunk")
-public class ExamDocumentAnalysisChunk {
+public class ExamDocumentAnalysisChunk extends BaseEntity {
 
-    @TableId(type = IdType.AUTO)
-    private Long id;
     private Long analysisId;
     private Long documentId;
     private Integer chunkIndex;
@@ -32,7 +31,5 @@ public class ExamDocumentAnalysisChunk {
     private String errorMessage;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
 

@@ -155,7 +155,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 rolePermissionService.roles(user.getId()),
                 Boolean.TRUE.equals(user.getForcePasswordChange()),
                 user.getLastLoginAt(),
-                user.getCreatedAt()
+                user.getCreateTime()
         );
     }
 

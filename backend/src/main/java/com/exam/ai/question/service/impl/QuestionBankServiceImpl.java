@@ -134,7 +134,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         String stemHash = stemNormalizer.hash(normalizedStem);
         // 同一用户同一分类下按题干哈希去重，避免重复解析或重复上传造成题库膨胀。
         ExamQuestionBank question = questionMapper.selectOne(new LambdaQueryWrapper<ExamQuestionBank>()
-                .eq(ExamQuestionBank::getCreatedBy, userId)
+                .eq(ExamQuestionBank::getCreateId, userId)
                 .eq(ExamQuestionBank::getCategoryId, category.getId())
                 .eq(ExamQuestionBank::getStemHash, stemHash)
                 .last("LIMIT 1"));
@@ -153,7 +153,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
             question.setDifficultyStars(item.difficultyStars());
             question.setState(QuestionState.PARSE_PENDING_CONFIRM.name());
             question.setTagRetryCount(0);
-            question.setCreatedBy(userId);
+            question.setCreateId(userId);
             questionMapper.insert(question);
             newlyCreated = true;
         }
@@ -190,7 +190,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         category.setCategoryName(normalized);
         category.setDescription(AI_AUTO_CATEGORY_DESCRIPTION);
         category.setStatus(QuestionCategoryStatus.ENABLED);
-        category.setCreatedBy(userId);
+        category.setCreateId(userId);
         categoryMapper.insert(category);
         return category;
     }
@@ -241,7 +241,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     public IPage<QuestionResponse> listQuestions(long page, long size, Long categoryId, String questionType,
                                                  String state, Long tagId) {
         LambdaQueryWrapper<ExamQuestionBank> query = new LambdaQueryWrapper<ExamQuestionBank>()
-                .eq(ExamQuestionBank::getCreatedBy, CurrentUserUtils.currentUserId())
+                .eq(ExamQuestionBank::getCreateId, CurrentUserUtils.currentUserId())
                 .orderByDesc(ExamQuestionBank::getId);
         if (categoryId != null) {
             query.eq(ExamQuestionBank::getCategoryId, categoryId);
@@ -253,7 +253,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
             query.eq(ExamQuestionBank::getState, state);
         }
         if (tagId != null) {
-            query.inSql(ExamQuestionBank::getId, "SELECT question_id FROM exam_question_tag_relation WHERE tag_id = " + tagId);
+            query.inSql(ExamQuestionBank::getId, "SELECT question_id FROM exam_question_tag_relation WHERE deleted = 0 AND tag_id = " + tagId);
         }
         return questionMapper.selectPage(Page.of(page, size), query).convert(this::toQuestionResponse);
     }
@@ -320,7 +320,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      */
     public List<ExamQuestionBank> tagCandidates(int limit, int maxRetries) {
         LambdaQueryWrapper<ExamQuestionBank> query = new LambdaQueryWrapper<ExamQuestionBank>()
-                .orderByAsc(ExamQuestionBank::getUpdatedAt)
+                .orderByAsc(ExamQuestionBank::getUpdateTime)
                 .last("LIMIT " + limit);
         if (maxRetries <= 0) {
             // 不允许重试时只挑选首次待标签题，避免失败题目反复进入调度。
@@ -375,7 +375,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         for (String tagName : tagNames) {
             // 标签需要按名称即时查找或创建，关系写入依赖每个标签的最终主键。
             ExamQuestionTag tag = findOrCreateTag(tagName);
-            tagRelationMapper.insert(new ExamQuestionTagRelation(questionId, tag.getId(), LocalDateTime.now()));
+            tagRelationMapper.insert(new ExamQuestionTagRelation(questionId, tag.getId()));
         }
         QuestionState next = stateTransitionService.transit(questionId, question.getState(), QuestionEvent.TAG_SUCCESS);
         question.setState(next.name());
@@ -452,7 +452,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                 safeRetryCount(question),
                 question.getTagNotifiedAt() != null,
                 tags(question.getId()),
-                question.getCreatedAt()
+                question.getCreateTime()
         );
     }
 
@@ -484,7 +484,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void requireOwner(ExamQuestionBank question) {
-        if (!CurrentUserUtils.currentUserId().equals(question.getCreatedBy())) {
+        if (!CurrentUserUtils.currentUserId().equals(question.getCreateId())) {
             throw BusinessException.forbidden();
         }
     }
@@ -500,7 +500,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
             throw BusinessException.badRequest("题库分类不存在或已停用");
         }
         ExamQuestionBank duplicate = questionMapper.selectOne(new LambdaQueryWrapper<ExamQuestionBank>()
-                .eq(ExamQuestionBank::getCreatedBy, question.getCreatedBy())
+                .eq(ExamQuestionBank::getCreateId, question.getCreateId())
                 .eq(ExamQuestionBank::getCategoryId, categoryId)
                 .eq(ExamQuestionBank::getStemHash, question.getStemHash())
                 .ne(ExamQuestionBank::getId, question.getId())
@@ -577,7 +577,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      * @param maxRetries 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void notifyTaggingFailed(ExamQuestionBank question, int maxRetries) {
-        if (question.getCreatedBy() == null || userMapper.selectById(question.getCreatedBy()) == null) {
+        if (question.getCreateId() == null || userMapper.selectById(question.getCreateId()) == null) {
             return;
         }
         String title = "题目 AI 标签分析失败";
@@ -585,7 +585,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                 + maxRetries + " 次，仍未生成题型标签，请人工处理。题干："
                 + abbreviate(question.getStem(), TAG_FAILURE_STEM_PREVIEW_LENGTH);
         notificationService.create(
-                question.getCreatedBy(),
+                question.getCreateId(),
                 title,
                 content,
                 NotificationService.TYPE_AI_TAGGING_FAILED,

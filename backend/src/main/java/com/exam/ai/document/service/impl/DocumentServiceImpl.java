@@ -479,7 +479,7 @@ public class DocumentServiceImpl implements DocumentService {
         analysis.setDocumentId(documentId);
         analysis.setModelName(modelName);
         analysis.setStatus(AnalysisStatus.PROCESSING);
-        analysis.setCreatedBy(createdBy);
+        analysis.setCreateId(createdBy);
         return analysis;
     }
 
@@ -496,7 +496,7 @@ public class DocumentServiceImpl implements DocumentService {
         Long count = sourceMapper.selectCount(new LambdaQueryWrapper<ExamQuestionSource>()
                 .eq(ExamQuestionSource::getAnalysisId, analysis.getId()));
         return new AnalysisSummary(analysis.getId(), analysis.getStatus(), analysis.getModelName(),
-                count == null ? 0 : count.intValue(), analysis.getErrorMessage(), chunkProgress(analysis.getId()), analysis.getCreatedAt());
+                count == null ? 0 : count.intValue(), analysis.getErrorMessage(), chunkProgress(analysis.getId()), analysis.getCreateTime());
     }
 
     /**
@@ -526,7 +526,7 @@ public class DocumentServiceImpl implements DocumentService {
                 document.getSha256(),
                 document.getStatus(),
                 document.getUploadedBy(),
-                document.getCreatedAt(),
+                document.getCreateTime(),
                 latestAnalysis
         );
     }
@@ -547,7 +547,7 @@ public class DocumentServiceImpl implements DocumentService {
                 analysis.getModelName(),
                 analysis.getErrorMessage(),
                 chunkProgress(analysis.getId()),
-                analysis.getCreatedAt(),
+                analysis.getCreateTime(),
                 sources.stream().map(this::toQuestionResponse).toList()
         );
     }
@@ -566,7 +566,7 @@ public class DocumentServiceImpl implements DocumentService {
                 analysis.getModelName(),
                 analysis.getErrorMessage(),
                 chunkProgress(analysis.getId()),
-                analysis.getCreatedAt(),
+                analysis.getCreateTime(),
                 importResults.stream().map(this::toQuestionResponse).toList()
         );
     }

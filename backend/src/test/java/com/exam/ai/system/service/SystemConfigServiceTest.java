@@ -2,6 +2,7 @@ package com.exam.ai.system.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,14 +33,14 @@ class SystemConfigServiceTest {
 
     @Test
     void shouldUseDefaultRetryCountWhenConfigMissing() {
-        when(configMapper.selectById(SystemConfigService.AI_TAGGING_MAX_RETRIES)).thenReturn(null);
+        when(configMapper.selectOne(any())).thenReturn(null);
 
         assertThat(systemConfigService.aiTaggingMaxRetries()).isEqualTo(3);
     }
 
     @Test
     void shouldUseDefaultDocumentAnalysisRetryCountWhenConfigMissing() {
-        when(configMapper.selectById(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES)).thenReturn(null);
+        when(configMapper.selectOne(any())).thenReturn(null);
 
         assertThat(systemConfigService.aiDocumentAnalysisMaxRetries()).isEqualTo(1);
     }
@@ -48,7 +49,7 @@ class SystemConfigServiceTest {
     void shouldClampRuntimeDocumentAnalysisRetryCountWhenConfigGreaterThanThree() {
         SysConfig config = new SysConfig();
         config.setConfigValue("9");
-        when(configMapper.selectById(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES)).thenReturn(config);
+        when(configMapper.selectOne(any())).thenReturn(config);
 
         assertThat(systemConfigService.aiDocumentAnalysisMaxRetries()).isEqualTo(3);
     }
@@ -57,7 +58,7 @@ class SystemConfigServiceTest {
     void shouldRejectInvalidRetryCount() {
         SysConfig config = new SysConfig();
         config.setConfigKey(SystemConfigService.AI_TAGGING_MAX_RETRIES);
-        when(configMapper.selectById(SystemConfigService.AI_TAGGING_MAX_RETRIES)).thenReturn(config);
+        when(configMapper.selectOne(any())).thenReturn(config);
 
         assertThatThrownBy(() -> CurrentUserUtils.runAs(principal(), (Callable<SystemConfigUpdateResult>) () -> systemConfigService.updateConfig(
                 SystemConfigService.AI_TAGGING_MAX_RETRIES,
@@ -73,7 +74,7 @@ class SystemConfigServiceTest {
         config.setConfigName("文档 AI 解析最大重试次数");
         config.setConfigValue("1");
         config.setValueType("INTEGER");
-        when(configMapper.selectById(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES)).thenReturn(config);
+        when(configMapper.selectOne(any())).thenReturn(config);
 
         SystemConfigUpdateResult result = CurrentUserUtils.runAs(principal(), (Callable<SystemConfigUpdateResult>) () -> systemConfigService.updateConfig(
                 SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES,
@@ -89,7 +90,7 @@ class SystemConfigServiceTest {
     void shouldRejectNegativeDocumentAnalysisRetryCount() {
         SysConfig config = new SysConfig();
         config.setConfigKey(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES);
-        when(configMapper.selectById(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES)).thenReturn(config);
+        when(configMapper.selectOne(any())).thenReturn(config);
 
         assertThatThrownBy(() -> CurrentUserUtils.runAs(principal(), (Callable<SystemConfigUpdateResult>) () -> systemConfigService.updateConfig(
                 SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES,
@@ -102,7 +103,7 @@ class SystemConfigServiceTest {
     void shouldRejectNonIntegerDocumentAnalysisRetryCount() {
         SysConfig config = new SysConfig();
         config.setConfigKey(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES);
-        when(configMapper.selectById(SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES)).thenReturn(config);
+        when(configMapper.selectOne(any())).thenReturn(config);
 
         assertThatThrownBy(() -> CurrentUserUtils.runAs(principal(), (Callable<SystemConfigUpdateResult>) () -> systemConfigService.updateConfig(
                 SystemConfigService.AI_DOCUMENT_ANALYSIS_MAX_RETRIES,

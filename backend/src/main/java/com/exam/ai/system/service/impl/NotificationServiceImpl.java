@@ -43,7 +43,7 @@ public class NotificationServiceImpl implements NotificationService {
     public IPage<NotificationResponse> list(long page, long size) {
         return notificationMapper.selectPage(Page.of(page, size), new LambdaQueryWrapper<SysNotification>()
                         .eq(SysNotification::getRecipientId, CurrentUserUtils.currentUserId())
-                        .orderByDesc(SysNotification::getCreatedAt))
+                        .orderByDesc(SysNotification::getCreateTime))
                 .convert(this::toResponse);
     }
 
@@ -102,7 +102,7 @@ public class NotificationServiceImpl implements NotificationService {
                 notification.getBusinessId(),
                 notification.getReadAt() != null,
                 notification.getReadAt(),
-                notification.getCreatedAt()
+                notification.getCreateTime()
         );
     }
 }

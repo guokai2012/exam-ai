@@ -165,7 +165,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
      */
     private RoleResponse toResponse(SysRole role) {
         List<String> permissions = permissionMapper.selectList(new LambdaQueryWrapper<SysPermission>()
-                        .inSql(SysPermission::getId, "SELECT permission_id FROM sys_role_permission WHERE role_id = " + role.getId())
+                        .inSql(SysPermission::getId, "SELECT permission_id FROM sys_role_permission WHERE deleted = 0 AND role_id = " + role.getId())
                         .orderByAsc(SysPermission::getId))
                 .stream().map(SysPermission::getPermissionCode).toList();
         return new RoleResponse(role.getId(), role.getRoleCode(), role.getRoleName(), permissions);

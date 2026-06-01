@@ -8,7 +8,6 @@ import com.exam.ai.system.vo.SystemConfigResponse;
 import com.exam.ai.system.vo.SystemConfigUpdateResult;
 import com.exam.ai.system.dto.UpdateSystemConfigRequest;
 import com.exam.ai.system.mapper.SysConfigMapper;
-import com.exam.ai.util.CurrentUserUtils;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +53,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public int aiTaggingMaxRetries() {
-        SysConfig config = configMapper.selectById(AI_TAGGING_MAX_RETRIES);
+        SysConfig config = findConfigByKey(AI_TAGGING_MAX_RETRIES);
         if (config == null) {
             return DEFAULT_AI_TAGGING_MAX_RETRIES;
         }
@@ -67,7 +66,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public int aiDocumentAnalysisMaxRetries() {
-        SysConfig config = configMapper.selectById(AI_DOCUMENT_ANALYSIS_MAX_RETRIES);
+        SysConfig config = findConfigByKey(AI_DOCUMENT_ANALYSIS_MAX_RETRIES);
         if (config == null) {
             return DEFAULT_AI_DOCUMENT_ANALYSIS_MAX_RETRIES;
         }
@@ -87,15 +86,24 @@ public class SystemConfigServiceImpl implements SystemConfigService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SystemConfigUpdateResult updateConfig(String key, UpdateSystemConfigRequest request) {
-        SysConfig config = configMapper.selectById(key);
+        SysConfig config = findConfigByKey(key);
         if (config == null) {
             throw BusinessException.badRequest("系统配置不存在");
         }
         ValidatedConfigValue validated = validateValue(key, request.configValue());
         config.setConfigValue(validated.value());
-        config.setUpdatedBy(CurrentUserUtils.currentUserId());
         configMapper.updateById(config);
-        return new SystemConfigUpdateResult(toResponse(configMapper.selectById(key)), validated.message());
+        return new SystemConfigUpdateResult(toResponse(findConfigByKey(key)), validated.message());
+    }
+
+    /**
+     * 根据配置键查询未删除配置记录。
+     *
+     * @param key 系统配置键，例如 AI 标签重试次数或文档分析重试次数。
+     * @return 配置实体；不存在时返回 {@code null}，由调用方决定使用默认值或抛出业务异常。
+     */
+    private SysConfig findConfigByKey(String key) {
+        return configMapper.selectOne(new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getConfigKey, key));
     }
 
     /**
@@ -160,7 +168,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 config.getConfigName(),
                 config.getDescription(),
                 config.getValueType(),
-                config.getUpdatedAt()
+                config.getUpdateTime()
         );
     }
 
