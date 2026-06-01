@@ -46,7 +46,7 @@
 - `entity`：数据库实体类（DO）。
 - `vo`：前端返回视图对象。
 - `dto`：前端传入参数对象。
-- `common/base`：基类、通用枚举。
+- `common/base`：基类、通用枚举；后端实体公共字段必须统一放在 `BaseEntity`。
 - `common/result`：统一返回值。
 - `common/exception`：全局异常。
 - `common/config`：配置类。
@@ -75,8 +75,11 @@
 
 ### 2.5 DTO 与 Entity 规范
 - 所有 DTO、Entity 等数据实体类必须优先采用 Lombok 注解生成样板代码，避免手写 getter、setter、构造器、toString 等重复代码。
+- 所有 Entity 实体必须继承 `common/base/BaseEntity`，禁止在各实体类中重复声明公共审计字段。
+- `BaseEntity` 必须统一包含 `id`、`createId`、`createTime`、`updateId`、`updateTime`、`deleted` 字段，并分别映射数据库字段 `id`、`create_id`、`create_time`、`update_id`、`update_time`、`deleted`。
+- `BaseEntity.id` 必须使用 `@TableId(type = IdType.AUTO)`；`deleted` 必须作为 MyBatis-Plus 逻辑删除字段，新增实体不得再使用 `is_deleted` 作为逻辑删除列。
+- `createId`、`updateId`、`createTime`、`updateTime` 必须通过 MyBatis-Plus 自动填充机制维护；填充当前用户 ID 时必须统一使用 `CurrentUserUtils.currentUserId()`。
 - 实体类必须使用 `@TableName("表名")`。
-- 主键必须使用 `@TableId(type = IdType.AUTO)`。
 - 字段映射优先使用 `@TableField("字段名")` 明确声明。
 - 布尔类型数据库字段使用 `is_xxx` 命名，实体字段使用 `Boolean`。
 
@@ -93,7 +96,8 @@
 ### 2.7 MySQL 8 规范
 - 表名使用小写加下划线，例如 `sys_user`。
 - 字段名使用小写加下划线，例如 `user_name`。
-- 表默认必须包含：`id BIGINT` 自增主键、`create_time DATETIME`、`update_time DATETIME`、`is_deleted TINYINT(1)` 逻辑删除字段。
+- 表默认必须包含：`id BIGINT` 自增主键、`create_id BIGINT` 创建人 ID、`create_time DATETIME` 创建时间、`update_id BIGINT` 更新人 ID、`update_time DATETIME` 更新时间、`deleted TINYINT(1)` 逻辑删除字段。
+- 所有业务表公共字段必须与 `BaseEntity` 字段保持一致；历史表如仍存在 `is_deleted`，后续迁移脚本必须按可重复执行规范逐步迁移为 `deleted`。
 - MyBatis-Plus 必须开启逻辑删除和自动填充。
 - 禁止使用数据库外键，关联关系由业务代码控制。
 - 时间类型统一使用 `DATETIME`，禁止使用 `TIMESTAMP`。
