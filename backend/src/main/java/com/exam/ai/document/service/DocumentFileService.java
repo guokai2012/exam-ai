@@ -9,15 +9,15 @@ import org.springframework.web.multipart.MultipartFile;
 public interface DocumentFileService {
 
     /**
-     * StoredDocument 记录对象，封装当前业务流程中的不可变数据。
-     * @param originalFilename 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param storedFilename 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param fileType 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param fileSize 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sha256 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param storagePath 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param extractedText 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * StoredDocument 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param originalFilename 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param storedFilename 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param fileType 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param fileSize 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sha256 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param storagePath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param extractedText 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     public record StoredDocument(
             String originalFilename,

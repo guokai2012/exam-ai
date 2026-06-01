@@ -5,7 +5,7 @@ import lombok.Builder;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * ApiResponse 记录对象，封装当前业务流程中的不可变数据。
+ * ApiResponse 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "统一接口响应")
 @Builder
@@ -19,9 +19,9 @@ public record ApiResponse<T>(
 ) {
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param data 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param data 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static <T> ApiResponse<T> ok(T data) {
@@ -29,10 +29,10 @@ public record ApiResponse<T>(
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param data 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param data 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static <T> ApiResponse<T> ok(T data, String message) {
@@ -40,8 +40,8 @@ public record ApiResponse<T>(
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static ApiResponse<Void> ok() {
@@ -49,10 +49,10 @@ public record ApiResponse<T>(
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param code 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param code 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static ApiResponse<Void> error(String code, String message) {

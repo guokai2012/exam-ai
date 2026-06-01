@@ -1,6 +1,7 @@
 import { api } from '../../api/http'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 
-export function listUsers(keyword = '', page = 1, size = 20) {
+export function listUsers(keyword = '', page = PAGE_DEFAULTS.page, size = PAGE_DEFAULTS.size) {
   const params = new URLSearchParams({ page: String(page), size: String(size) })
   if (keyword) params.set('keyword', keyword)
   return api.get(`/api/admin/users?${params.toString()}`)

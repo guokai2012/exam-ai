@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * QuestionTaggingServiceImpl 类，承载当前分层中的业务职责。
+ * QuestionTaggingServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class QuestionTaggingServiceImpl implements QuestionTaggingService {
@@ -32,11 +32,11 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
 
     /**
      * 构造 QuestionTaggingServiceImpl 实例并注入运行所需依赖。
-     * @param questionBankService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param systemConfigService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chatClientBuilderProvider 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param apiKey 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param questionBankService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param systemConfigService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chatClientBuilderProvider 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param objectMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param apiKey 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public QuestionTaggingServiceImpl(QuestionBankService questionBankService,
@@ -52,7 +52,7 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void tagPendingQuestions() {
@@ -69,9 +69,9 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<String> analyzeTags(ExamQuestionBank question) {
@@ -105,8 +105,8 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param raw 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param raw 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<String> parseTags(String raw) {
         try {
@@ -129,9 +129,9 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param raw 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param raw 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String extractJson(String raw) {
         if (raw == null) {
@@ -155,9 +155,9 @@ public class QuestionTaggingServiceImpl implements QuestionTaggingService {
     }
 
     /**
-     * TagResult 记录对象，封装当前业务流程中的不可变数据。
-     * @param tags 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * TagResult 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param tags 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record TagResult(List<String> tags) {
     }

@@ -47,7 +47,7 @@
         layout="total, sizes, prev, pager, next"
         :current-page="pagination.page"
         :page-size="pagination.size"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_DEFAULTS.sizes"
         :total="pagination.total"
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
@@ -113,11 +113,12 @@ import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElM
 import { Search } from '@element-plus/icons-vue'
 import { createUser, disableUser, kickUser, listUsers, resetPassword, updateUser } from './api'
 import { listRoles } from '../admin-roles/api'
+import { PAGE_DEFAULTS, USER_STATUS, VALIDATION_LIMITS } from '../../shared/constants'
 
 const keyword = ref('')
 const users = ref([])
 const roles = ref([])
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.size, total: 0 })
 const editVisible = ref(false)
 const resetVisible = ref(false)
 const editingUser = ref(null)
@@ -135,8 +136,8 @@ const userRules = {
           callback(new Error('请输入初始密码'))
           return
         }
-        if (value && value.length < 8) {
-          callback(new Error('密码至少 8 位'))
+        if (value && value.length < VALIDATION_LIMITS.passwordStrongMin) {
+          callback(new Error(`密码至少 ${VALIDATION_LIMITS.passwordStrongMin} 位`))
           return
         }
         callback()
@@ -149,10 +150,13 @@ const userRules = {
 const resetRules = {
   password: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 8, message: '新密码至少 8 位', trigger: 'blur' }
+    { min: VALIDATION_LIMITS.passwordStrongMin, message: `新密码至少 ${VALIDATION_LIMITS.passwordStrongMin} 位`, trigger: 'blur' }
   ]
 }
 
+/**
+ * 按关键字和分页参数加载用户列表，查询结果总数驱动分页组件。
+ */
 async function loadUsers() {
   try {
     const result = await listUsers(keyword.value, pagination.page, pagination.size)
@@ -163,22 +167,34 @@ async function loadUsers() {
   }
 }
 
+/**
+ * 搜索条件变化后从第一页开始查询，避免沿用旧页码导致结果为空。
+ */
 function handleSearch() {
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadUsers()
 }
 
+/**
+ * 切换用户列表页码并保留当前关键字条件。
+ */
 function handlePageChange(page) {
   pagination.page = page
   loadUsers()
 }
 
+/**
+ * 每页数量变化后重置页码，保证分页边界与后端查询一致。
+ */
 function handleSizeChange(size) {
   pagination.size = size
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadUsers()
 }
 
+/**
+ * 加载角色列表供新建和编辑用户时分配角色。
+ */
 async function loadRoles() {
   try {
     roles.value = await listRoles()
@@ -187,13 +203,19 @@ async function loadRoles() {
   }
 }
 
+/**
+ * 打开新建用户弹窗，并重置表单状态。
+ */
 function openCreate() {
   editingUser.value = null
-  Object.assign(userForm, { username: '', password: '', nickname: '', status: 1, roles: [] })
+  Object.assign(userForm, { username: '', password: '', nickname: '', status: USER_STATUS.enabled, roles: [] })
   editVisible.value = true
   userFormRef.value?.clearValidate()
 }
 
+/**
+ * 打开编辑用户弹窗，将当前行数据复制到表单草稿，避免直接修改表格数据。
+ */
 function openEdit(row) {
   editingUser.value = row
   Object.assign(userForm, { username: row.username, password: '', nickname: row.nickname, status: row.status, roles: [...(row.roles || [])] })
@@ -201,6 +223,9 @@ function openEdit(row) {
   userFormRef.value?.clearValidate()
 }
 
+/**
+ * 根据当前弹窗状态执行新建或编辑用户，成功后刷新列表。
+ */
 async function saveUser() {
   await userFormRef.value?.validate()
   try {
@@ -217,6 +242,9 @@ async function saveUser() {
   }
 }
 
+/**
+ * 撤销指定用户会话，用于管理员处理账号风险或权限变更后强制重新登录。
+ */
 async function kick(row) {
   try {
     await kickUser(row.id)
@@ -226,12 +254,18 @@ async function kick(row) {
   }
 }
 
+/**
+ * 打开重置密码弹窗，并清理上一次输入的密码草稿。
+ */
 function openReset(row) {
   resetUser.value = row
   resetForm.password = ''
   resetVisible.value = true
 }
 
+/**
+ * 保存管理员重置的新密码，后端会要求用户下次登录后修改密码。
+ */
 async function saveReset() {
   await resetFormRef.value?.validate()
   try {
@@ -244,6 +278,9 @@ async function saveReset() {
   }
 }
 
+/**
+ * 禁用用户前二次确认，避免误操作导致账号不可用。
+ */
 async function disable(row) {
   try {
     await ElMessageBox.confirm(`确认禁用用户 ${row.username}？`, '确认操作')

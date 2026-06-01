@@ -149,6 +149,7 @@ import {
 import { Refresh, Upload } from '@element-plus/icons-vue'
 import { analyzeDocument, getDocumentContent, getDocumentDetail, latestAnalysis, listDocuments as fetchDocuments, uploadDocument } from './api'
 import { analyzeButtonText, canAnalyzeDocument, formatSize, stateLabel, typeLabel } from '../../shared/formatters'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 
 const selectedFile = ref(null)
 const uploading = ref(false)
@@ -157,12 +158,15 @@ const documents = ref([])
 const activeDocument = ref(null)
 const analysis = ref(null)
 const contentPreview = ref('')
-const pagination = ref({ page: 1, size: 10, total: 0 })
+const pagination = ref({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.documentSize, total: 0 })
 
 function selectFile(uploadFile) {
   selectedFile.value = uploadFile.raw || null
 }
 
+/**
+ * 分页加载当前用户文档列表，列表总数用于驱动左侧分页控件。
+ */
 async function loadDocuments() {
   try {
     const result = await fetchDocuments(pagination.value.page, pagination.value.size)
@@ -173,6 +177,9 @@ async function loadDocuments() {
   }
 }
 
+/**
+ * 上传文档后清空本地选择并刷新列表，让新文档立即出现在当前工作区。
+ */
 async function submitUpload() {
   if (!selectedFile.value) return
   uploading.value = true
@@ -190,6 +197,9 @@ async function submitUpload() {
   }
 }
 
+/**
+ * 选中文档时优先加载详情接口，再加载最新分析结果，保证详情面板字段完整。
+ */
 async function selectDocument(doc) {
   analysis.value = null
   contentPreview.value = ''
@@ -202,11 +212,17 @@ async function selectDocument(doc) {
   }
 }
 
+/**
+ * 切换文档页码后刷新列表，当前详情保持不变，避免用户正在查看的分析被打断。
+ */
 function handlePageChange(page) {
   pagination.value.page = page
   loadDocuments()
 }
 
+/**
+ * 懒加载提取文本，只有用户展开预览区域时才请求大文本内容。
+ */
 async function loadContent(activeNames) {
   const opened = Array.isArray(activeNames) ? activeNames.includes('content') : activeNames === 'content'
   if (!opened || !activeDocument.value || contentPreview.value) return
@@ -218,6 +234,9 @@ async function loadContent(activeNames) {
   }
 }
 
+/**
+ * 触发 AI 分析并刷新列表状态，便于用户看到文档解析状态变化。
+ */
 async function startAnalyze() {
   if (!activeDocument.value) return
   analyzing.value = true

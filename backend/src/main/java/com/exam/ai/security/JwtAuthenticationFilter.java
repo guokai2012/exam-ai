@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * JwtAuthenticationFilter 类，承载当前分层中的业务职责。
+ * JwtAuthenticationFilter 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -29,9 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * 构造 JwtAuthenticationFilter 实例并注入运行所需依赖。
-     * @param jwtService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param redisTemplate 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param jwtService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param redisTemplate 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public JwtAuthenticationFilter(JwtService jwtService, StringRedisTemplate redisTemplate, SysUserMapper userMapper) {
@@ -41,10 +41,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param response 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param filterChain 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param response 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param filterChain 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -64,8 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param token 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param token 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void authenticate(String token) {
         try {
@@ -97,8 +97,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String resolveBearerToken(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");

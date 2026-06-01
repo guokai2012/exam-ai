@@ -55,15 +55,15 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 构造 AuthServiceImpl 实例并注入运行所需依赖。
-     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param refreshTokenMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rolePermissionService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param passwordEncoder 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param captchaService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param jwtService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param tokenHashService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param redisTemplate 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param properties 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param userMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param refreshTokenMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param rolePermissionService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param passwordEncoder 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param captchaService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param jwtService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param tokenHashService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param redisTemplate 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param properties 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AuthServiceImpl(SysUserMapper userMapper, SysRefreshTokenMapper refreshTokenMapper,
@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 注册普通学生账号，并为新用户绑定默认学生角色。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -104,10 +104,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 校验验证码和账号密码，签发新的访问令牌与刷新令牌。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param ip 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userAgent 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param ip 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userAgent 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -129,10 +129,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 校验旧刷新令牌并进行令牌轮换，防止刷新令牌被重放使用。
-     * @param refreshToken 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param ip 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userAgent 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param refreshToken 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param ip 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userAgent 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -179,8 +179,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 退出登录并清理当前会话下的刷新令牌与 Redis 缓存。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param refreshToken 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param refreshToken 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -200,8 +200,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public CurrentUserResponse currentUser() {
@@ -222,8 +222,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -246,12 +246,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param user 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sessionId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param ip 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userAgent 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param user 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sessionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param ip 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userAgent 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private TokenResponse issueTokenPair(SysUser user, String sessionId, String ip, String userAgent) {
         List<String> roles = rolePermissionService.roles(user.getId());
@@ -265,12 +265,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sessionId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param refreshHash 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param ip 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userAgent 业务参数，参与当前方法的校验、查询或状态变更。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sessionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param refreshHash 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param ip 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userAgent 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void saveRefreshToken(Long userId, String sessionId, String refreshHash, String ip, String userAgent) {
         SysRefreshToken token = new SysRefreshToken();
@@ -285,8 +285,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param username 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param username 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void ensureUsernameAvailable(String username) {
         Long count = userMapper.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
@@ -297,8 +297,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sessionId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sessionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void revokeUserActiveTokens(Long userId, String sessionId) {
         LambdaQueryWrapper<SysRefreshToken> query = new LambdaQueryWrapper<SysRefreshToken>()

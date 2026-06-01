@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * NotificationServiceImpl 类，承载当前分层中的业务职责。
+ * NotificationServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class NotificationServiceImpl implements NotificationService {
@@ -26,7 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 构造 NotificationServiceImpl 实例并注入运行所需依赖。
-     * @param notificationMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param notificationMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public NotificationServiceImpl(SysNotificationMapper notificationMapper) {
@@ -35,9 +35,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public IPage<NotificationResponse> list(long page, long size) {
@@ -49,8 +49,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -67,13 +67,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param recipientId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param title 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param content 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param type 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param businessType 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param businessId 业务参数，参与当前方法的校验、查询或状态变更。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param recipientId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param title 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param content 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param type 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param businessType 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param businessId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void create(Long recipientId, String title, String content, String type, String businessType, Long businessId) {
@@ -89,8 +89,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param notification 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param notification 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private NotificationResponse toResponse(SysNotification notification) {
         return new NotificationResponse(

@@ -22,15 +22,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public interface CaptchaService {
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public CaptchaResponse create();
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param captchaId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param captchaCode 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param captchaId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param captchaCode 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void verify(String captchaId, String captchaCode);

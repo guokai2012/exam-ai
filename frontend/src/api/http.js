@@ -1,7 +1,7 @@
 import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from '../shared/authToken'
+import { AUTH_REFRESH_SKIP_PATHS } from '../shared/constants'
 
 let refreshPromise = null
-const AUTH_REFRESH_SKIP_PATHS = ['/api/auth/captcha', '/api/auth/register', '/api/auth/login', '/api/auth/refresh']
 
 export class ApiError extends Error {
   constructor(message, status, code) {
@@ -19,6 +19,10 @@ function redirectToLogin() {
   }
 }
 
+/**
+ * 使用 refresh token 换取新的 access token。
+ * 多个接口同时遇到 401 时共享同一个刷新 Promise，避免并发刷新导致后端令牌轮换冲突。
+ */
 async function refreshAccessToken() {
   if (!refreshPromise) {
     refreshPromise = fetch('/api/auth/refresh', {
@@ -42,6 +46,10 @@ async function refreshAccessToken() {
   return refreshPromise
 }
 
+/**
+ * 统一发送接口请求，负责注入访问令牌、序列化请求体、处理统一响应和登录态续期。
+ * 当业务接口返回 401 时会先尝试刷新令牌并重放原请求，刷新失败才跳转登录页。
+ */
 async function requestPayload(path, options = {}) {
   const token = getAccessToken()
   const headers = { ...(options.headers || {}) }
@@ -56,6 +64,7 @@ async function requestPayload(path, options = {}) {
   }
 
   if (options.body instanceof FormData) {
+    // 文件上传必须保留浏览器生成的 multipart boundary，不能手动指定 JSON Content-Type。
     init.body = options.body
   } else if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
@@ -66,6 +75,7 @@ async function requestPayload(path, options = {}) {
   const payload = await response.json().catch(() => null)
   if (response.status === 401 && !options.skipAuthRefresh && !options.retried && !AUTH_REFRESH_SKIP_PATHS.includes(path)) {
     try {
+      // 刷新成功后重放原请求，并用 retried 标记避免异常情况下无限重试。
       await refreshAccessToken()
       return requestPayload(path, { ...options, retried: true })
     } catch {

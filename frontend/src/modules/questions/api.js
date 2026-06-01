@@ -1,4 +1,5 @@
 import { api } from '../../api/http'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 
 export function listCategories() {
   return api.get('/api/question-categories')
@@ -10,8 +11,8 @@ export function createCategory(payload) {
 
 export function listQuestions(filters = {}) {
   const params = new URLSearchParams({
-    page: String(filters.page || 1),
-    size: String(filters.size || 20)
+    page: String(filters.page || PAGE_DEFAULTS.page),
+    size: String(filters.size || PAGE_DEFAULTS.size)
   })
   if (filters.categoryId) {
     params.set('categoryId', filters.categoryId)

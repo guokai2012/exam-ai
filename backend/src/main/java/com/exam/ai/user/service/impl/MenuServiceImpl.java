@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * MenuServiceImpl 类，承载当前分层中的业务职责。
+ * MenuServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class MenuServiceImpl implements MenuService {
@@ -31,8 +31,8 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 构造 MenuServiceImpl 实例并注入运行所需依赖。
-     * @param menuMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param permissionService 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param menuMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param permissionService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public MenuServiceImpl(SysMenuMapper menuMapper, AdminPermissionService permissionService) {
@@ -42,7 +42,7 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<MenuResponse> tree() {
@@ -51,8 +51,8 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<MenuResponse> currentUserMenus() {
@@ -68,9 +68,9 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -88,9 +88,9 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -107,7 +107,7 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -122,8 +122,8 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param menu 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param menu 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void fill(SysMenu menu, SaveMenuRequest request) {
         menu.setParentId(request.parentId());
@@ -137,18 +137,18 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysMenu requireMenu(Long id) {
         SysMenu menu = menuMapper.selectById(id);
@@ -160,8 +160,8 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param menus 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param menus 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<MenuResponse> toTree(List<SysMenu> menus) {
         Map<Long, List<SysMenu>> children = menus.stream().collect(Collectors.groupingBy(menu -> menu.getParentId() == null ? 0L : menu.getParentId()));
@@ -170,10 +170,10 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param M 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param children 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param parentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param M 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param children 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param parentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<MenuResponse> buildTree(Map<Long, List<SysMenu>> children, Long parentId) {
         return children.getOrDefault(parentId, List.of()).stream()
@@ -184,9 +184,9 @@ public class MenuServiceImpl implements MenuService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param menu 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param children 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param menu 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param children 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private MenuResponse toResponse(SysMenu menu, List<MenuResponse> children) {
         return new MenuResponse(menu.getId(), menu.getParentId(), menu.getMenuName(), menu.getPath(), menu.getComponent(),
@@ -194,9 +194,9 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param menus 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param menus 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<MenuResponse> pruneEmptyGroups(List<MenuResponse> menus) {
         return menus.stream()

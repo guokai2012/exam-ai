@@ -19,7 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * DocumentController 类，承载当前分层中的业务职责。
+ * 文档分析接口控制器，负责教师文档上传、文档列表、文本预览和 AI 分析入口。
+ *
+ * <p>控制器仅接收 HTTP 参数并返回统一响应，文件落盘、文本抽取、分析状态流转和题目入库由
+ * {@link DocumentService} 统一处理。</p>
  */
 @RestController
 @RequestMapping("/api/documents")
@@ -29,19 +32,20 @@ public class DocumentController {
     private final DocumentService documentService;
 
     /**
-     * 构造 DocumentController 实例并注入运行所需依赖。
-     * @param documentService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 构造文档分析接口控制器。
+     *
+     * @param documentService 文档上传、查询和分析业务服务。
      */
     public DocumentController(DocumentService documentService) {
         this.documentService = documentService;
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param file 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 上传文档并提取原始文本。
+     *
+     * @param file 待上传的 md、pdf、doc 或 docx 文件。
+     * @return 文档基础信息和初始解析状态。
+     * @throws com.exam.ai.common.exception.BusinessException 当文件为空、类型不支持、大小超限或文本提取失败时抛出。
      */
     @PostMapping
     @PreAuthorize("hasAuthority('document:upload')")
@@ -51,11 +55,12 @@ public class DocumentController {
     }
 
     /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 分页查询当前用户上传的文档。
+     *
+     * @param page 页码，从 1 开始。
+     * @param size 每页数量。
+     * @return 当前用户的文档分页数据。
+     * @throws com.exam.ai.common.exception.BusinessException 当用户上下文缺失时抛出。
      */
     @GetMapping
     @PreAuthorize("hasAuthority('document:list')")
@@ -66,10 +71,11 @@ public class DocumentController {
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询文档详情。
+     *
+     * @param id 文档 ID。
+     * @return 文档基础信息和最新分析摘要。
+     * @throws com.exam.ai.common.exception.BusinessException 当文档不存在或不属于当前用户时抛出。
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('document:detail')")
@@ -79,10 +85,11 @@ public class DocumentController {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询文档提取后的纯文本内容。
+     *
+     * @param id 文档 ID。
+     * @return 文档文本预览内容。
+     * @throws com.exam.ai.common.exception.BusinessException 当文档不存在、不属于当前用户或尚未提取文本时抛出。
      */
     @GetMapping("/{id}/content")
     @PreAuthorize("hasAuthority('document:content')")
@@ -92,10 +99,11 @@ public class DocumentController {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 发起或继续文档 AI 题目分析。
+     *
+     * @param id 文档 ID。
+     * @return 分析批次、分片进度和识别出的题目结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当文档不存在、不属于当前用户或当前状态不允许分析时抛出。
      */
     @PostMapping("/{id}/analysis")
     @PreAuthorize("hasAuthority('document:analyze')")
@@ -105,10 +113,11 @@ public class DocumentController {
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询文档最近一次 AI 分析结果。
+     *
+     * @param id 文档 ID。
+     * @return 最近一次分析批次和题目结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当文档不存在、不属于当前用户或没有分析记录时抛出。
      */
     @GetMapping("/{id}/analysis/latest")
     @PreAuthorize("hasAuthority('document:analysis-latest')")

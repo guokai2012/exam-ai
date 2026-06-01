@@ -36,6 +36,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus'
 import { register } from './api'
+import { VALIDATION_LIMITS } from '../../shared/constants'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -45,12 +46,22 @@ const form = reactive({ username: '', nickname: '', password: '', confirmPasswor
 const rules = {
   username: [
     { required: true, message: '请输入账号', trigger: 'blur' },
-    { min: 3, max: 64, message: '账号长度为 3 到 64 位', trigger: 'blur' }
+    {
+      min: VALIDATION_LIMITS.usernameMin,
+      max: VALIDATION_LIMITS.accountMax,
+      message: `账号长度为 ${VALIDATION_LIMITS.usernameMin} 到 ${VALIDATION_LIMITS.accountMax} 位`,
+      trigger: 'blur'
+    }
   ],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 64, message: '密码长度为 6 到 64 位', trigger: 'blur' }
+    {
+      min: VALIDATION_LIMITS.passwordMin,
+      max: VALIDATION_LIMITS.accountMax,
+      message: `密码长度为 ${VALIDATION_LIMITS.passwordMin} 到 ${VALIDATION_LIMITS.accountMax} 位`,
+      trigger: 'blur'
+    }
   ],
   confirmPassword: [
     {
@@ -70,6 +81,9 @@ const rules = {
   ]
 }
 
+/**
+ * 提交学生自助注册表单，后端会创建学生账号并绑定默认学生角色。
+ */
 async function submitRegister() {
   await formRef.value?.validate()
   submitting.value = true

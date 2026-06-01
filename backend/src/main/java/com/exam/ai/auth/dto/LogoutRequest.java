@@ -5,7 +5,7 @@ import lombok.Builder;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * LogoutRequest 记录对象，封装当前业务流程中的不可变数据。
+ * LogoutRequest 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "退出登录请求")
 @Builder

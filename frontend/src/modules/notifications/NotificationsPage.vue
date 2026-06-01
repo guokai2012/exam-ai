@@ -28,7 +28,7 @@
         layout="total, sizes, prev, pager, next"
         :current-page="pagination.page"
         :page-size="pagination.size"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_DEFAULTS.sizes"
         :total="pagination.total"
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
@@ -42,10 +42,14 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElButton, ElCard, ElEmpty, ElMessage, ElPagination, ElTag } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { listNotifications as fetchNotifications, markNotificationRead } from './api'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 
 const notifications = ref([])
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.size, total: 0 })
 
+/**
+ * 分页加载当前用户站内通知，总数同步到分页控件。
+ */
 async function loadNotifications() {
   try {
     const result = await fetchNotifications(pagination.page, pagination.size)
@@ -56,17 +60,26 @@ async function loadNotifications() {
   }
 }
 
+/**
+ * 切换通知页码并保留当前每页数量。
+ */
 function handlePageChange(page) {
   pagination.page = page
   loadNotifications()
 }
 
+/**
+ * 每页数量变化后重置到第一页，避免请求越界页。
+ */
 function handleSizeChange(size) {
   pagination.size = size
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadNotifications()
 }
 
+/**
+ * 将单条未读通知标记为已读，成功后刷新当前页。
+ */
 async function readNotification(notification) {
   try {
     await markNotificationRead(notification.id)

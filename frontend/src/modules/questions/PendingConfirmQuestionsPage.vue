@@ -48,7 +48,7 @@
         layout="total, sizes, prev, pager, next"
         :current-page="pagination.page"
         :page-size="pagination.size"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_DEFAULTS.sizes"
         :total="pagination.total"
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
@@ -76,12 +76,13 @@ import {
 } from 'element-plus'
 import { getQuestion, listCategories, listQuestions as fetchQuestions, reviewQuestion } from './api'
 import { stateLabel, typeLabel } from '../../shared/formatters'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 import QuestionDetailDialog from './QuestionDetailDialog.vue'
 
 const categories = ref([])
 const questions = ref([])
 const filters = reactive({ categoryId: '' })
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.size, total: 0 })
 const reviewDrafts = reactive({})
 const detailVisible = ref(false)
 const detailQuestion = ref(null)
@@ -112,22 +113,34 @@ async function loadQuestions() {
   }
 }
 
+/**
+ * 分类筛选变化后重置到第一页，确保待确认列表和分页总数重新计算。
+ */
 function handleFilterChange() {
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadQuestions()
 }
 
+/**
+ * 翻页时保留当前分类筛选和待确认状态条件。
+ */
 function handlePageChange(page) {
   pagination.page = page
   loadQuestions()
 }
 
+/**
+ * 每页数量变化会影响总页数，因此统一回到第一页重新查询。
+ */
 function handleSizeChange(size) {
   pagination.size = size
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadQuestions()
 }
 
+/**
+ * 详情弹窗使用后端详情接口获取完整题目信息，避免只展示列表摘要。
+ */
 async function openQuestionDetail(question) {
   try {
     detailQuestion.value = await getQuestion(question.id)
@@ -137,6 +150,9 @@ async function openQuestionDetail(question) {
   }
 }
 
+/**
+ * 提交题目确认或驳回结果，并在成功后刷新待确认列表。
+ */
 async function submitReview(question, approved) {
   try {
     await reviewQuestion(question.id, {

@@ -19,7 +19,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * CaptchaServiceImpl 类，承载当前分层中的业务职责。
+ * CaptchaServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class CaptchaServiceImpl implements CaptchaService {
@@ -30,8 +30,8 @@ public class CaptchaServiceImpl implements CaptchaService {
 
     /**
      * 构造 CaptchaServiceImpl 实例并注入运行所需依赖。
-     * @param redisTemplate 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param properties 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param redisTemplate 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param properties 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public CaptchaServiceImpl(StringRedisTemplate redisTemplate, SecurityProperties properties) {
@@ -40,8 +40,8 @@ public class CaptchaServiceImpl implements CaptchaService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public CaptchaResponse create() {
@@ -58,9 +58,9 @@ public class CaptchaServiceImpl implements CaptchaService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param captchaId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param captchaCode 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param captchaId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param captchaCode 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void verify(String captchaId, String captchaCode) {
@@ -73,9 +73,9 @@ public class CaptchaServiceImpl implements CaptchaService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String draw(String text) {
         try {

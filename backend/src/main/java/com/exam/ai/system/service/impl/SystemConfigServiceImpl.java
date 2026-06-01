@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * SystemConfigServiceImpl 类，承载当前分层中的业务职责。
+ * SystemConfigServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class SystemConfigServiceImpl implements SystemConfigService {
@@ -29,7 +29,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 构造 SystemConfigServiceImpl 实例并注入运行所需依赖。
-     * @param configMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param configMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public SystemConfigServiceImpl(SysConfigMapper configMapper) {
@@ -38,7 +38,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<SystemConfigResponse> listConfigs() {
@@ -49,8 +49,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public int aiTaggingMaxRetries() {
@@ -62,8 +62,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public int aiDocumentAnalysisMaxRetries() {
@@ -80,9 +80,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param key 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param key 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -99,10 +99,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param key 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param key 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ValidatedConfigValue validateValue(String key, String value) {
         if (AI_TAGGING_MAX_RETRIES.equals(key)) {
@@ -127,8 +127,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private int parseRetryCount(String value) {
         return parseRetryCount(value, "AI 标签最大重试次数必须是整数");
@@ -136,9 +136,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param errorMessage 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param errorMessage 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private int parseRetryCount(String value, String errorMessage) {
         try {
@@ -150,8 +150,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param config 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param config 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SystemConfigResponse toResponse(SysConfig config) {
         return new SystemConfigResponse(
@@ -165,10 +165,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     /**
-     * ValidatedConfigValue 记录对象，封装当前业务流程中的不可变数据。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * ValidatedConfigValue 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record ValidatedConfigValue(String value, String message) {
     }

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * ExamDocument 类，承载当前分层中的业务职责。
+ * ExamDocument 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Data
 @Schema(description = "考试文档实体")

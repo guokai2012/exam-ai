@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AdminUserController 类，承载当前分层中的业务职责。
+ * AdminUserController 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @RestController
 @RequestMapping("/api/admin/users")
@@ -35,7 +35,7 @@ public class AdminUserController {
 
     /**
      * 构造 AdminUserController 实例并注入运行所需依赖。
-     * @param adminUserService 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param adminUserService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AdminUserController(AdminUserService adminUserService) {
@@ -44,10 +44,10 @@ public class AdminUserController {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param keyword 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param keyword 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @GetMapping
@@ -60,9 +60,9 @@ public class AdminUserController {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @PostMapping
@@ -74,9 +74,9 @@ public class AdminUserController {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @PutMapping("/{id}")
@@ -88,8 +88,8 @@ public class AdminUserController {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @DeleteMapping("/{id}")
@@ -102,8 +102,8 @@ public class AdminUserController {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @PostMapping("/{id}/kick")
@@ -115,10 +115,10 @@ public class AdminUserController {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @PostMapping("/{id}/reset-password")

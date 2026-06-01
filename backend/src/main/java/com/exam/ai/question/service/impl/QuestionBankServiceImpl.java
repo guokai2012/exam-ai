@@ -47,6 +47,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuestionBankServiceImpl implements QuestionBankService {
 
     private static final String DEFAULT_CATEGORY = "默认题库";
+    private static final String DEFAULT_TAG = "未分类标签";
+    private static final String AI_AUTO_CATEGORY_DESCRIPTION = "AI 自动分类";
+    private static final String AI_AUTO_TAG_DESCRIPTION = "AI 自动标签";
+    private static final int MAX_CATEGORY_NAME_LENGTH = 128;
+    private static final int MAX_TAG_NAME_LENGTH = 128;
+    private static final int TAG_FAILURE_STEM_PREVIEW_LENGTH = 120;
 
     private final ExamQuestionCategoryMapper categoryMapper;
     private final ExamQuestionBankMapper questionMapper;
@@ -60,18 +66,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 构造 QuestionBankServiceImpl 实例并注入运行所需依赖。
-     * @param categoryMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param questionMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sourceMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param tagMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param tagRelationMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param stemNormalizer 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param stateTransitionService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param notificationService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 构造题库业务服务。
+     *
+     * @param categoryMapper 题目分类表访问器。
+     * @param questionMapper 题库题目表访问器。
+     * @param sourceMapper 题目来源表访问器，用于记录文档解析来源。
+     * @param tagMapper 标签表访问器。
+     * @param tagRelationMapper 题目标签关系表访问器。
+     * @param stemNormalizer 题干标准化与哈希工具。
+     * @param stateTransitionService 题目状态机服务。
+     * @param notificationService 站内通知服务，用于标签失败后提醒题目创建者。
+     * @param userMapper 用户表访问器，用于通知前确认创建者仍存在。
+     * @param objectMapper JSON 序列化工具，用于读写题目选项。
      */
     public QuestionBankServiceImpl(ExamQuestionCategoryMapper categoryMapper, ExamQuestionBankMapper questionMapper,
                                ExamQuestionSourceMapper sourceMapper, ExamQuestionTagMapper tagMapper,
@@ -93,13 +99,14 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 导入 AI 识别出的题目，并绑定文档、解析批次和排序信息。
-     * @param item 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sortOrder 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     *
+     * @param item AI 返回的单题结构。
+     * @param documentId 来源文档 ID。
+     * @param analysisId 文档分析批次 ID。
+     * @param sortOrder 题目在分析结果中的顺序。
+     * @param userId 题目归属用户 ID。
+     * @return 题目入库结果，包含是否新建和来源排序。
+     * @throws JsonProcessingException 当题目选项无法序列化为 JSON 时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, int sortOrder,
@@ -108,15 +115,16 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 审核题目并通过状态机完成确认或拒绝流转。
-     * @param item 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunkId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sortOrder 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 导入 AI 识别出的题目，并记录可选分片来源。
+     *
+     * @param item AI 返回的单题结构。
+     * @param documentId 来源文档 ID。
+     * @param analysisId 文档分析批次 ID。
+     * @param chunkId 文档分片 ID，整篇分析场景可为空。
+     * @param sortOrder 题目在分析结果中的顺序。
+     * @param userId 题目归属用户 ID。
+     * @return 题目入库结果，包含分类、题目、来源和是否新建。
+     * @throws JsonProcessingException 当题目选项无法序列化为 JSON 时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, Long chunkId, int sortOrder,
@@ -163,9 +171,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询或创建题目分类，AI 未给出分类时归入默认题库。
-     * @param categoryName 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param categoryName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -180,7 +188,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         // 分类由 AI 自动创建时只保存启用状态，后续可由管理端维护描述。
         ExamQuestionCategory category = new ExamQuestionCategory();
         category.setCategoryName(normalized);
-        category.setDescription("AI 自动分类");
+        category.setDescription(AI_AUTO_CATEGORY_DESCRIPTION);
         category.setStatus(QuestionCategoryStatus.ENABLED);
         category.setCreatedBy(userId);
         categoryMapper.insert(category);
@@ -189,7 +197,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<QuestionCategoryResponse> categories() {
@@ -202,10 +210,10 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -220,14 +228,14 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param categoryId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param questionType 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param state 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param tagId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param categoryId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param questionType 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param state 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param tagId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public IPage<QuestionResponse> listQuestions(long page, long size, Long categoryId, String questionType,
@@ -252,8 +260,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public QuestionResponse detail(Long id) {
@@ -262,9 +270,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public QuestionResponse detailForCurrentUser(Long id) {
@@ -274,12 +282,12 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 审核待确认题目并执行确认或驳回状态流转。
+     *
+     * @param id 题目 ID。
+     * @param request 审核请求，包含是否通过、目标分类和审核原因。
+     * @return 审核后的题目视图对象。
+     * @throws BusinessException 当题目不存在、当前用户不是创建者、目标分类无效或状态不允许审核时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public QuestionResponse review(Long id, ReviewQuestionRequest request) {
@@ -304,17 +312,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param limit 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param maxRetries 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询待执行 AI 标签任务的题目。
+     *
+     * @param limit 单次调度最多处理的题目数量。
+     * @param maxRetries 标签失败题目的最大重试次数，小于等于 0 时只处理首次待标签题目。
+     * @return 按更新时间升序排列的候选题目。
      */
     public List<ExamQuestionBank> tagCandidates(int limit, int maxRetries) {
         LambdaQueryWrapper<ExamQuestionBank> query = new LambdaQueryWrapper<ExamQuestionBank>()
                 .orderByAsc(ExamQuestionBank::getUpdatedAt)
                 .last("LIMIT " + limit);
         if (maxRetries <= 0) {
+            // 不允许重试时只挑选首次待标签题，避免失败题目反复进入调度。
             query.eq(ExamQuestionBank::getState, QuestionState.TAG_PENDING.name());
         } else {
             query.and(wrapper -> wrapper
@@ -332,8 +341,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 标记题目开始执行自动标签任务。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -353,8 +362,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 保存 AI 自动标签并将题目标记为标签处理完成。
-     * @param questionId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param tagNames 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param questionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param tagNames 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -376,9 +385,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 记录自动标签失败原因，达到最大重试次数后给题目创建者发送通知。
-     * @param questionId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param errorMessage 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param maxRetries 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param questionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param errorMessage 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param maxRetries 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -396,23 +405,23 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 标准化分类名称，空分类统一归入默认题库并限制数据库字段长度。
+     *
+     * @param value 原始分类名称。
+     * @return 标准化后的分类名称。
      */
     public String normalizeCategoryName(String value) {
         String normalized = value == null ? "" : value.replaceAll("\\s+", " ").trim();
         if (normalized.isBlank()) {
             normalized = DEFAULT_CATEGORY;
         }
-        return normalized.length() > 128 ? normalized.substring(0, 128) : normalized;
+        return normalized.length() > MAX_CATEGORY_NAME_LENGTH ? normalized.substring(0, MAX_CATEGORY_NAME_LENGTH) : normalized;
     }
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public QuestionResponse toQuestionResponse(ExamQuestionBank question) {
@@ -449,17 +458,17 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param category 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param category 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private QuestionCategoryResponse toCategoryResponse(ExamQuestionCategory category) {
         return new QuestionCategoryResponse(category.getId(), category.getCategoryName(), category.getDescription(), category.getStatus());
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamQuestionBank requireQuestion(Long id) {
         ExamQuestionBank question = questionMapper.selectById(id);
@@ -470,9 +479,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void requireOwner(ExamQuestionBank question) {
         if (!CurrentUserUtils.currentUserId().equals(question.getCreatedBy())) {
@@ -481,9 +490,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param categoryId 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param categoryId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void moveCategoryWithDuplicateCheck(ExamQuestionBank question, Long categoryId) {
         ExamQuestionCategory category = categoryMapper.selectById(categoryId);
@@ -504,8 +513,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param tagName 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param tagName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamQuestionTag findOrCreateTag(String tagName) {
         String normalized = normalizeTagName(tagName);
@@ -517,29 +526,29 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         }
         ExamQuestionTag tag = new ExamQuestionTag();
         tag.setTagName(normalized);
-        tag.setDescription("AI 自动标签");
+        tag.setDescription(AI_AUTO_TAG_DESCRIPTION);
         tag.setStatus(QuestionCategoryStatus.ENABLED);
         tagMapper.insert(tag);
         return tag;
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String normalizeTagName(String value) {
         String normalized = value == null ? "" : value.replaceAll("\\s+", " ").trim();
         if (normalized.isBlank()) {
-            normalized = "未分类标签";
+            normalized = DEFAULT_TAG;
         }
-        return normalized.length() > 128 ? normalized.substring(0, 128) : normalized;
+        return normalized.length() > MAX_TAG_NAME_LENGTH ? normalized.substring(0, MAX_TAG_NAME_LENGTH) : normalized;
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param questionId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param questionId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<String> tags(Long questionId) {
         List<ExamQuestionTagRelation> relations = tagRelationMapper.selectList(new LambdaQueryWrapper<ExamQuestionTagRelation>()
@@ -554,18 +563,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private int safeRetryCount(ExamQuestionBank question) {
         return question.getTagRetryCount() == null ? 0 : question.getTagRetryCount();
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param question 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param maxRetries 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param question 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param maxRetries 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void notifyTaggingFailed(ExamQuestionBank question, int maxRetries) {
         if (question.getCreatedBy() == null || userMapper.selectById(question.getCreatedBy()) == null) {
@@ -574,7 +583,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         String title = "题目 AI 标签分析失败";
         String content = "题目 #" + question.getId() + " 在首次分析失败后已重试 "
                 + maxRetries + " 次，仍未生成题型标签，请人工处理。题干："
-                + abbreviate(question.getStem(), 120);
+                + abbreviate(question.getStem(), TAG_FAILURE_STEM_PREVIEW_LENGTH);
         notificationService.create(
                 question.getCreatedBy(),
                 title,
@@ -586,10 +595,10 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param maxLength 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param maxLength 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String abbreviate(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {

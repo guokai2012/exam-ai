@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
- * DocumentChunker 类，承载当前分层中的业务职责。
+ * DocumentChunker 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Component
 public class DocumentChunker {
@@ -20,10 +20,10 @@ public class DocumentChunker {
     );
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param maxChars 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param maxChars 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<DocumentChunk> chunk(String text, int maxChars) {
@@ -59,9 +59,9 @@ public class DocumentChunker {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<QuestionBlock> questionBlocks(String text) {
         List<Line> lines = lines(text);
@@ -95,9 +95,9 @@ public class DocumentChunker {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<Line> lines(String text) {
         List<Line> lines = new ArrayList<>();
@@ -116,22 +116,22 @@ public class DocumentChunker {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param index 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param startOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param endOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param questionCount 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param oversized 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param index 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param startOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param endOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param questionCount 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param oversized 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private DocumentChunk toChunk(String text, int index, int startOffset, int endOffset, int questionCount, boolean oversized) {
         return new DocumentChunk(index, text, sha256(text), startOffset, endOffset, questionCount, oversized);
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String sha256(String value) {
         try {
@@ -143,35 +143,35 @@ public class DocumentChunker {
     }
 
     /**
-     * QuestionBlock 记录对象，封装当前业务流程中的不可变数据。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param startOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param endOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * QuestionBlock 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param startOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param endOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record QuestionBlock(String text, int startOffset, int endOffset) {
     }
 
     /**
-     * Line 记录对象，封装当前业务流程中的不可变数据。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param startOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param endOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * Line 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param startOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param endOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record Line(String text, int startOffset, int endOffset) {
     }
 
     /**
-     * DocumentChunk 记录对象，封装当前业务流程中的不可变数据。
-     * @param chunkIndex 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunkText 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunkHash 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param startOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param endOffset 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param questionCountEstimate 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param oversized 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * DocumentChunk 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param chunkIndex 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunkText 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunkHash 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param startOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param endOffset 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param questionCountEstimate 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param oversized 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     public record DocumentChunk(
             int chunkIndex,

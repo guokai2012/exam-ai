@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AdminUserServiceImpl 类，承载当前分层中的业务职责。
+ * AdminUserServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
@@ -37,11 +37,11 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 构造 AdminUserServiceImpl 实例并注入运行所需依赖。
-     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param refreshTokenMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rolePermissionService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param passwordEncoder 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param redisTemplate 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param userMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param refreshTokenMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param rolePermissionService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param passwordEncoder 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param redisTemplate 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AdminUserServiceImpl(SysUserMapper userMapper, SysRefreshTokenMapper refreshTokenMapper,
@@ -56,10 +56,10 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param keyword 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param keyword 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public IPage<UserResponse> list(long page, long size, String keyword) {
@@ -73,9 +73,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -97,9 +97,9 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -117,7 +117,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -129,9 +129,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysUser requireUser(Long id) {
         SysUser user = userMapper.selectById(id);
@@ -143,8 +143,8 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param user 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param user 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private UserResponse toResponse(SysUser user) {
         return new UserResponse(
@@ -161,7 +161,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void revokeUserSessions(Long userId) {
         redisTemplate.delete(RedisKeys.session(userId));
@@ -178,7 +178,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -188,10 +188,10 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)

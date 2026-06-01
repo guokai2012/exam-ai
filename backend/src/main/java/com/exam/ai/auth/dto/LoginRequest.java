@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * LoginRequest 记录对象，封装当前业务流程中的不可变数据。
+ * LoginRequest 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "登录请求")
 @Builder

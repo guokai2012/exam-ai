@@ -81,20 +81,20 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 构造 DocumentServiceImpl 实例并注入运行所需依赖。
-     * @param documentMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunkMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param sourceMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param questionBankService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param fileService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param documentChunker 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param parser 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chatClientBuilderProvider 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param aiProperties 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param systemConfigService 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param modelName 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param apiKey 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param documentMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysisMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunkMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sourceMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param questionBankService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param fileService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param documentChunker 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param parser 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chatClientBuilderProvider 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param objectMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param aiProperties 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param systemConfigService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param modelName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param apiKey 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public DocumentServiceImpl(ExamDocumentMapper documentMapper, ExamDocumentAnalysisMapper analysisMapper,
@@ -123,9 +123,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 上传文档并保存文件元数据、提取文本和上传人信息。
-     * @param file 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param file 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -149,10 +149,10 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param size 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public IPage<DocumentResponse> list(long page, long size) {
@@ -165,9 +165,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public DocumentResponse detail(Long id) {
@@ -177,9 +177,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 启动文档 AI 解析，将文档文本拆分为可重试分片并汇总最终解析状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public DocumentContentResponse content(Long id) {
@@ -188,10 +188,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -218,9 +218,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AnalysisResponse latestAnalysis(Long documentId) {
@@ -234,9 +234,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 获取本次解析批次；新文档创建新批次，失败重试优先复用已有分片。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamDocumentAnalysis analysisForParsing(ExamDocument document, Long userId) {
         ExamDocumentAnalysis analysis = DocumentStatus.UPLOADED.equals(document.getStatus())
@@ -254,8 +254,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 根据最大输入字符数创建解析分片记录。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void createChunks(ExamDocument document, Long analysisId) {
         List<DocumentChunker.DocumentChunk> chunks = documentChunker.chunk(document.getExtractedText(), aiProperties.getMaxInputChars());
@@ -279,9 +279,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 顺序处理待解析分片，保证题目来源排序与原文片段顺序一致。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysis 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void processPendingChunks(ExamDocument document, ExamDocumentAnalysis analysis, Long userId) {
         List<ExamDocumentAnalysisChunk> pendingChunks = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
@@ -296,10 +296,10 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 解析单个文档分片并将 AI 结果导入题库。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysis 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunk 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void processChunk(ExamDocument document, ExamDocumentAnalysis analysis, ExamDocumentAnalysisChunk chunk, Long userId) {
         chunk.setStatus(AnalysisChunkStatus.PROCESSING);
@@ -337,8 +337,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 按系统配置的最大重试次数调用 AI，最终保留最后一次异常。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private AnalysisComputation analyzeChunkWithRetry(String text) throws JsonProcessingException {
         int attempts = 1 + Math.max(0, systemConfigService.aiDocumentAnalysisMaxRetries());
@@ -362,8 +362,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 调用 AI 模型解析文档片段，并将模型响应转换为结构化题目集合。
-     * @param text 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private AnalysisComputation analyzeChunk(String text) throws JsonProcessingException {
         if (apiKey == null || apiKey.isBlank() || "sk-placeholder".equals(apiKey)) {
@@ -392,8 +392,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 汇总分片结果并同步更新解析批次和文档主状态。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysis 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void finishAnalysis(ExamDocument document, ExamDocumentAnalysis analysis) {
         ChunkProgressResponse progress = chunkProgress(analysis.getId());
@@ -418,12 +418,12 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param items 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<QuestionImportResult> saveQuestions(Long documentId, Long analysisId, Long userId, List<AiQuestionItem> items)
             throws JsonProcessingException {
@@ -431,14 +431,14 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param chunkId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param startOrder 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param items 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunkId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param startOrder 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<QuestionImportResult> saveQuestions(Long documentId, Long analysisId, Long chunkId, int startOrder,
                                                      Long userId, List<AiQuestionItem> items)
@@ -452,10 +452,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param principal 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamDocument requireVisibleDocument(Long id) {
         ExamDocument document = documentMapper.selectById(id);
@@ -469,10 +469,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param createdBy 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param createdBy 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamDocumentAnalysis newAnalysis(Long documentId, Long createdBy) {
         ExamDocumentAnalysis analysis = new ExamDocumentAnalysis();
@@ -485,8 +485,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private AnalysisSummary latestSummary(Long documentId) {
         ExamDocumentAnalysis analysis = latestAnalysisEntity(documentId);
@@ -501,8 +501,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ExamDocumentAnalysis latestAnalysisEntity(Long documentId) {
         return analysisMapper.selectOne(new LambdaQueryWrapper<ExamDocumentAnalysis>()
@@ -513,9 +513,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param document 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param latestAnalysis 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param latestAnalysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private DocumentResponse toDocumentResponse(ExamDocument document, AnalysisSummary latestAnalysis) {
         return new DocumentResponse(
@@ -533,8 +533,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param analysis 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private AnalysisResponse toAnalysisResponse(ExamDocumentAnalysis analysis) {
         List<ExamQuestionSource> sources = sourceMapper.selectList(new LambdaQueryWrapper<ExamQuestionSource>()
@@ -554,9 +554,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param analysis 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param importResults 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param importResults 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private AnalysisResponse toAnalysisResponse(ExamDocumentAnalysis analysis, List<QuestionImportResult> importResults) {
         return new AnalysisResponse(
@@ -573,8 +573,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<ExamDocumentAnalysisChunk> chunks(Long analysisId) {
         return chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
@@ -583,9 +583,9 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param analysisId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private ChunkProgressResponse chunkProgress(Long analysisId) {
         List<ExamDocumentAnalysisChunk> chunks = chunks(analysisId);
@@ -614,9 +614,9 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param chunk 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private int safeRetryCount(ExamDocumentAnalysisChunk chunk) {
         return chunk.getRetryCount() == null ? 0 : chunk.getRetryCount();
@@ -624,8 +624,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param chunk 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private int chunkSortOrderBase(ExamDocumentAnalysisChunk chunk) {
         int chunkIndex = chunk.getChunkIndex() == null ? 0 : chunk.getChunkIndex();
@@ -633,10 +633,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param existing 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param raw 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param existing 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param raw 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String appendRawJson(String existing, String raw) {
         if (raw == null || raw.isBlank()) {
@@ -650,8 +650,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param result 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param result 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private QuestionAnalysisResponse toQuestionResponse(QuestionImportResult result) {
         QuestionResponse question = questionBankService.toQuestionResponse(result.question());
@@ -674,8 +674,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param source 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param source 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private QuestionAnalysisResponse toQuestionResponse(ExamQuestionSource source) {
         QuestionResponse question = questionBankService.detail(source.getQuestionId());
@@ -697,10 +697,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * AnalysisComputation 记录对象，封装当前业务流程中的不可变数据。
-     * @param items 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rawJson 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * AnalysisComputation 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param rawJson 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record AnalysisComputation(List<AiQuestionItem> items, String rawJson) {
     }
@@ -723,8 +723,8 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         /**
-         * 执行当前业务步骤，维护调用方需要的处理结果。
-         * @return 当前业务步骤的处理结果。
+         * 执行当前业务步骤，并返回调用方需要的处理结果。
+         * @return 封装后的业务处理结果。
          */
         private String rawResponse() {
             return rawResponse;

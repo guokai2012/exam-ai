@@ -3,7 +3,7 @@ package com.exam.ai.common.exception;
 import org.springframework.http.HttpStatus;
 
 /**
- * BusinessException 类，承载当前分层中的业务职责。
+ * BusinessException 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 public class BusinessException extends RuntimeException {
 
@@ -12,9 +12,9 @@ public class BusinessException extends RuntimeException {
 
     /**
      * 构造 BusinessException 实例并注入运行所需依赖。
-     * @param code 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param status 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param code 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param status 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public BusinessException(String code, String message, HttpStatus status) {
@@ -24,9 +24,9 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static BusinessException badRequest(String message) {
@@ -34,8 +34,8 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static BusinessException unauthorized() {
@@ -43,8 +43,8 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static BusinessException forbidden() {
@@ -53,7 +53,7 @@ public class BusinessException extends RuntimeException {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static BusinessException tooManyRequests() {
@@ -61,9 +61,9 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param message 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public static BusinessException conflict(String message) {
@@ -72,7 +72,7 @@ public class BusinessException extends RuntimeException {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public String getCode() {
@@ -81,7 +81,7 @@ public class BusinessException extends RuntimeException {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public HttpStatus getStatus() {

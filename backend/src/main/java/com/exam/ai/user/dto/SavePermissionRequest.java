@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * SavePermissionRequest 记录对象，封装当前业务流程中的不可变数据。
+ * SavePermissionRequest 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "保存权限请求")
 @Builder

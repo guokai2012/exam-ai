@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * ResetPasswordRequest 记录对象，封装当前业务流程中的不可变数据。
+ * ResetPasswordRequest 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "重置密码请求")
 @Builder

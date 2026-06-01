@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * ForcePasswordChangeFilter 类，承载当前分层中的业务职责。
+ * ForcePasswordChangeFilter 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Component
 public class ForcePasswordChangeFilter extends OncePerRequestFilter {
@@ -33,8 +33,8 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
 
     /**
      * 构造 ForcePasswordChangeFilter 实例并注入运行所需依赖。
-     * @param userMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param userMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param objectMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public ForcePasswordChangeFilter(SysUserMapper userMapper, ObjectMapper objectMapper) {
@@ -43,10 +43,10 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param response 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param filterChain 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param response 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param filterChain 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -68,9 +68,9 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param uri 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param uri 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean isAllowed(String uri) {
         return ALLOWED_PATHS.contains(uri);

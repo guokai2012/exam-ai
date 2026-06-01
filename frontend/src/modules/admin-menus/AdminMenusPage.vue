@@ -60,24 +60,13 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElTable, ElTableColumn } from 'element-plus'
 import { createMenu, deleteMenu, listMenus, updateMenu } from './api'
+import { MENU_COMPONENT_OPTIONS, USER_STATUS } from '../../shared/constants'
 
 const menus = ref([])
 const visible = ref(false)
 const formRef = ref(null)
-const form = reactive({ id: null, parentId: '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: 1 })
-const componentOptions = [
-  { label: '菜单分组', value: 'MenuGroup' },
-  { label: '我的文档', value: 'DocumentsPage' },
-  { label: '可用题', value: 'AvailableQuestionsPage' },
-  { label: '待确认题', value: 'PendingConfirmQuestionsPage' },
-  { label: '站内通知', value: 'NotificationsPage' },
-  { label: '用户详情', value: 'ProfilePage' },
-  { label: '系统配置', value: 'SystemConfigPage' },
-  { label: '用户管理', value: 'AdminUsersPage' },
-  { label: '角色管理', value: 'AdminRolesPage' },
-  { label: '权限管理', value: 'AdminPermissionsPage' },
-  { label: '菜单管理', value: 'AdminMenusPage' }
-]
+const form = reactive({ id: null, parentId: '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: USER_STATUS.enabled })
+const componentOptions = MENU_COMPONENT_OPTIONS
 const formRules = {
   menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
   path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
@@ -91,14 +80,26 @@ async function load() {
     ElMessage.error(error.message || '菜单树加载失败')
   }
 }
+
+/**
+ * 打开新建菜单弹窗，新增子菜单时自动带入父菜单 ID。
+ */
 function openCreate(parent) {
-  Object.assign(form, { id: null, parentId: parent?.id || '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: 1 })
+  Object.assign(form, { id: null, parentId: parent?.id || '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: USER_STATUS.enabled })
   visible.value = true
 }
+
+/**
+ * 打开编辑菜单弹窗，将表格行复制为表单草稿，避免直接修改列表数据。
+ */
 function openEdit(row) {
   Object.assign(form, { ...row, parentId: row.parentId || '', permissionCode: row.permissionCode || '', icon: row.icon || '' })
   visible.value = true
 }
+
+/**
+ * 保存菜单前校验组件标识必须来自当前前端已实现页面，避免生成不可访问菜单。
+ */
 async function save() {
   await formRef.value?.validate()
   if (!componentOptions.some(option => option.value === form.component)) {
@@ -125,6 +126,10 @@ async function save() {
     ElMessage.error(error.message || '菜单保存失败')
   }
 }
+
+/**
+ * 删除菜单前进行二次确认，后端会继续校验是否存在子菜单。
+ */
 async function remove(row) {
   try {
     await ElMessageBox.confirm(`确认删除菜单 ${row.menuName}？`, '确认操作')

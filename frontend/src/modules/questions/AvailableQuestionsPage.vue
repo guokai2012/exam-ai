@@ -44,7 +44,7 @@
         layout="total, sizes, prev, pager, next"
         :current-page="pagination.page"
         :page-size="pagination.size"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_DEFAULTS.sizes"
         :total="pagination.total"
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
@@ -88,12 +88,13 @@ import {
 } from 'element-plus'
 import { createCategory, getQuestion, listCategories, listQuestions as fetchQuestions } from './api'
 import { stateLabel, typeLabel } from '../../shared/formatters'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 import QuestionDetailDialog from './QuestionDetailDialog.vue'
 
 const categories = ref([])
 const questions = ref([])
 const filters = reactive({ categoryId: '' })
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.size, total: 0 })
 const categoryVisible = ref(false)
 const categoryFormRef = ref(null)
 const categoryForm = reactive({ categoryName: '', description: '' })
@@ -111,6 +112,9 @@ async function loadCategories() {
   }
 }
 
+/**
+ * 按当前筛选条件分页加载可用题，保证列表、总数和分页控件保持一致。
+ */
 async function loadQuestions() {
   try {
     const result = await fetchQuestions({
@@ -126,28 +130,43 @@ async function loadQuestions() {
   }
 }
 
+/**
+ * 筛选条件变化后回到第一页，避免旧页码在新条件下出现空列表。
+ */
 function handleFilterChange() {
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadQuestions()
 }
 
+/**
+ * 切换页码后保留当前分类筛选，只刷新题目列表。
+ */
 function handlePageChange(page) {
   pagination.page = page
   loadQuestions()
 }
 
+/**
+ * 调整每页数量后回到第一页，避免分页边界变化导致请求越界。
+ */
 function handleSizeChange(size) {
   pagination.size = size
-  pagination.page = 1
+  pagination.page = PAGE_DEFAULTS.page
   loadQuestions()
 }
 
+/**
+ * 打开新增分类弹窗前重置草稿，防止上一次输入残留到新建流程。
+ */
 function openCategoryDialog() {
   Object.assign(categoryForm, { categoryName: '', description: '' })
   categoryVisible.value = true
   categoryFormRef.value?.clearValidate()
 }
 
+/**
+ * 保存人工维护的题目分类，成功后立即刷新分类下拉供筛选使用。
+ */
 async function saveCategory() {
   await categoryFormRef.value?.validate()
   try {
@@ -160,6 +179,9 @@ async function saveCategory() {
   }
 }
 
+/**
+ * 按题目 ID 重新获取详情，避免列表摘要字段缺失影响详情弹窗展示。
+ */
 async function openQuestionDetail(question) {
   try {
     detailQuestion.value = await getQuestion(question.id)

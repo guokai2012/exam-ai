@@ -36,7 +36,10 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * AdminPermissionServiceImpl 类，承载当前分层中的业务职责。
+ * 后台权限管理服务实现，负责权限树查询、动作权限维护、Controller 权限扫描和菜单权限节点同步。
+ *
+ * <p>权限树由分组节点、菜单节点、菜单查看权限和接口动作权限组成。菜单节点由菜单数据同步生成，
+ * 接口动作权限可由扫描任务生成，也允许管理员手动维护未扫描到的特殊权限。</p>
  */
 @Service
 public class AdminPermissionServiceImpl implements AdminPermissionService {
@@ -48,6 +51,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     private static final String MENU_GROUP_COMPONENT = "MenuGroup";
     private static final String UNCATEGORIZED_CODE = "__uncategorized";
+    private static final int DEFAULT_ACTION_SORT_ORDER = 100;
+    private static final int DEFAULT_VIEW_SORT_ORDER = 0;
+    private static final int UNCATEGORIZED_SORT_ORDER = 9999;
     private static final Pattern HAS_AUTHORITY = Pattern.compile("hasAuthority\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)");
     private static final Pattern HAS_ANY_AUTHORITY = Pattern.compile("hasAnyAuthority\\(([^)]*)\\)");
     private static final Pattern QUOTED_VALUE = Pattern.compile("['\"]([^'\"]+)['\"]");
@@ -58,12 +64,12 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     private final RequestMappingHandlerMapping handlerMapping;
 
     /**
-     * 构造 AdminPermissionServiceImpl 实例并注入运行所需依赖。
-     * @param permissionMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rolePermissionMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param menuMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param handlerMapping 业务参数，参与当前方法的校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 构造权限管理服务。
+     *
+     * @param permissionMapper 权限表访问器。
+     * @param rolePermissionMapper 角色权限关系访问器，用于删除权限时清理授权关系。
+     * @param menuMapper 菜单表访问器，用于把菜单结构同步为权限树节点。
+     * @param handlerMapping Spring MVC 路由映射，用于扫描 Controller 上的权限注解。
      */
     public AdminPermissionServiceImpl(SysPermissionMapper permissionMapper,
                                   SysRolePermissionMapper rolePermissionMapper,
@@ -76,11 +82,12 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询完整权限树。
+     *
+     * @return 按菜单、分组和动作权限组织后的权限树。
      */
     public List<PermissionResponse> list() {
+        // 未归类节点兜底承载无法匹配菜单的动作权限，保证权限树不会出现孤儿节点。
         ensureUncategorizedRoot();
         return toTree(permissionMapper.selectList(new LambdaQueryWrapper<SysPermission>()
                 .orderByAsc(SysPermission::getSortOrder)
@@ -88,10 +95,11 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 手动创建动作权限。
+     *
+     * @param request 权限保存请求，包含父节点、权限码、权限名称和排序值。
+     * @return 新建后的动作权限视图对象。
+     * @throws BusinessException 当权限码已存在或父节点不是有效权限节点时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public PermissionResponse create(SavePermissionRequest request) {
@@ -101,18 +109,19 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
         permission.setPermissionCode(request.permissionCode());
         permission.setPermissionName(request.permissionName());
         permission.setPermissionType(TYPE_ACTION);
-        permission.setSortOrder(request.sortOrder() == null ? 100 : request.sortOrder());
+        permission.setSortOrder(request.sortOrder() == null ? DEFAULT_ACTION_SORT_ORDER : request.sortOrder());
         permission.setSystemGenerated(0);
         permissionMapper.insert(permission);
         return toResponse(permissionMapper.selectById(permission.getId()), List.of());
     }
 
     /**
-     * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 编辑可维护的动作权限。
+     *
+     * @param id 权限 ID。
+     * @param request 权限保存请求，包含新的父节点、权限码、权限名称和排序值。
+     * @return 更新后的动作权限视图对象。
+     * @throws BusinessException 当权限不存在、系统生成节点被编辑、权限码重复或父节点非法时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public PermissionResponse update(Long id, SavePermissionRequest request) {
@@ -130,9 +139,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 删除可维护的动作权限，并同步清理角色授权关系。
+     *
+     * @param id 权限 ID。
+     * @throws BusinessException 当权限不存在、权限为系统生成节点或仍存在子权限时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
@@ -149,9 +159,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 更新业务状态，并保持相关数据的一致性。
-     * @return 当前业务步骤的处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 扫描所有 Controller 上的权限表达式并同步动作权限。
+     *
+     * @return 本次扫描新增、更新和删除的动作权限数量。
      */
     @Transactional(rollbackFor = Exception.class)
     public PermissionScanResponse scanControllerPermissions() {
@@ -172,18 +182,20 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
             SysMenu menu = bestMenuForEndpoint(endpointPermission.path(), menus);
             Long parentId = menu == null ? ensureUncategorizedRoot().getId() : ensureMenuPermissionNode(menu).getId();
             if (existing == null) {
+                // 新扫描到的动作权限挂到最匹配的菜单节点；无法匹配时挂到未归类节点，方便管理员后续整理。
                 SysPermission permission = new SysPermission();
                 permission.setParentId(parentId);
                 permission.setMenuId(menu == null ? null : menu.getId());
                 permission.setPermissionCode(endpointPermission.permissionCode());
                 permission.setPermissionName(endpointPermission.displayName());
                 permission.setPermissionType(TYPE_ACTION);
-                permission.setSortOrder(100);
+                permission.setSortOrder(DEFAULT_ACTION_SORT_ORDER);
                 permission.setSystemGenerated(1);
                 permission.setLastScannedAt(now);
                 permissionMapper.insert(permission);
                 created++;
             } else {
+                // 菜单查看权限不能被接口扫描覆盖为动作权限，只刷新动作权限的归属和扫描时间。
                 boolean isView = TYPE_VIEW.equals(existing.getPermissionType());
                 existing.setParentId(isView ? existing.getParentId() : parentId);
                 existing.setMenuId(isView ? existing.getMenuId() : menu == null ? null : menu.getId());
@@ -196,6 +208,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
         }
 
         Set<String> currentCodes = scanned.keySet();
+        // 上次扫描生成但本次不再出现在 Controller 的动作权限视为过期，删除时同步清理角色授权关系。
         List<SysPermission> stalePermissions = permissionMapper.selectList(new LambdaQueryWrapper<SysPermission>()
                         .eq(SysPermission::getPermissionType, TYPE_ACTION)
                         .eq(SysPermission::getSystemGenerated, 1)
@@ -208,9 +221,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 更新业务状态，并保持相关数据的一致性。
-     * @param menu 业务参数，参与当前方法的校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 将菜单记录同步为权限树中的菜单节点和查看权限。
+     *
+     * @param menu 菜单记录，包含路径、组件、权限码和父菜单关系。
+     * @throws BusinessException 当菜单绑定的权限码与已有权限冲突时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
     public void syncMenuPermission(SysMenu menu) {
@@ -237,7 +251,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
             viewPermission.setParentId(menuNode.getId());
             viewPermission.setMenuId(menu.getId());
             viewPermission.setPermissionType(TYPE_VIEW);
-            viewPermission.setSortOrder(0);
+            viewPermission.setSortOrder(DEFAULT_VIEW_SORT_ORDER);
             viewPermission.setSystemGenerated(1);
             if (viewPermission.getId() == null) {
                 permissionMapper.insert(viewPermission);
@@ -248,9 +262,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param menu 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param menu 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public String generatedViewCode(SysMenu menu) {
@@ -264,7 +278,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      */
     private Map<String, EndpointPermission> scanEndpointPermissions() {
         Map<String, EndpointPermission> permissions = new LinkedHashMap<>();
@@ -287,9 +301,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param handlerMethod 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param handlerMethod 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private Set<String> extractAuthorityCodes(HandlerMethod handlerMethod) {
         Set<String> codes = new LinkedHashSet<>();
@@ -306,9 +320,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param expression 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param codes 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param expression 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param codes 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void collectAuthorityCodes(String expression, Set<String> codes) {
         Matcher authorityMatcher = HAS_AUTHORITY.matcher(expression);
@@ -325,9 +339,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param mappingInfo 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param mappingInfo 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<String> paths(RequestMappingInfo mappingInfo) {
         Set<String> values = new LinkedHashSet<>();
@@ -344,9 +358,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param mappingInfo 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param mappingInfo 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<String> methods(RequestMappingInfo mappingInfo) {
         Set<RequestMethod> requestMethods = mappingInfo.getMethodsCondition().getMethods();
@@ -357,10 +371,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param endpointPath 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param menus 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param endpointPath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param menus 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysMenu bestMenuForEndpoint(String endpointPath, List<SysMenu> menus) {
         String normalizedEndpoint = normalizeApiPath(endpointPath);
@@ -373,10 +387,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param endpointPath 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param menuPath 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param endpointPath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param menuPath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean pathMatches(String endpointPath, String menuPath) {
         return endpointPath.equals(menuPath)
@@ -385,9 +399,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param endpointPath 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param endpointPath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String normalizeApiPath(String endpointPath) {
         String normalized = endpointPath.replaceAll("\\{[^/]+}", "").replaceAll("/+", "/");
@@ -400,9 +414,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param menu 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param menu 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysPermission ensureMenuPermissionNode(SysMenu menu) {
         SysPermission permission = permissionMapper.selectOne(new LambdaQueryWrapper<SysPermission>()
@@ -428,9 +442,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param parentMenuId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param parentMenuId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private Long parentMenuPermissionId(Long parentMenuId) {
         if (parentMenuId == null) {
@@ -443,8 +457,8 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @return 封装后的业务处理结果。
      */
     private SysPermission ensureUncategorizedRoot() {
         SysPermission permission = permissionMapper.selectOne(new LambdaQueryWrapper<SysPermission>()
@@ -457,7 +471,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
         permission.setPermissionCode(UNCATEGORIZED_CODE);
         permission.setPermissionName("未归类权限");
         permission.setPermissionType(TYPE_GROUP);
-        permission.setSortOrder(9999);
+        permission.setSortOrder(UNCATEGORIZED_SORT_ORDER);
         permission.setSystemGenerated(1);
         permissionMapper.insert(permission);
         return permissionMapper.selectById(permission.getId());
@@ -465,8 +479,8 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param parentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param parentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private Long resolveParentId(Long parentId) {
         if (parentId != null) {
@@ -478,8 +492,8 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param permissions 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param permissions 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<PermissionResponse> toTree(List<SysPermission> permissions) {
         Map<Long, List<SysPermission>> children = permissions.stream()
@@ -489,10 +503,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param M 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param children 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param parentId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param M 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param children 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param parentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private List<PermissionResponse> buildTree(Map<Long, List<SysPermission>> children, Long parentId) {
         return children.getOrDefault(parentId, List.of()).stream()
@@ -504,9 +518,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param permission 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param children 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param permission 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param children 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private PermissionResponse toResponse(SysPermission permission, List<PermissionResponse> children) {
         return new PermissionResponse(
@@ -524,9 +538,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param permission 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param permission 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean assignable(SysPermission permission) {
         return hasText(permission.getPermissionCode())
@@ -537,7 +551,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param permission 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param permission 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void deletePermission(SysPermission permission) {
         rolePermissionMapper.delete(new LambdaUpdateWrapper<SysRolePermission>().eq(SysRolePermission::getPermissionId, permission.getId()));
@@ -545,9 +559,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param code 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param excludeId 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param code 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param excludeId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void ensureCodeAvailable(String code, Long excludeId) {
         LambdaQueryWrapper<SysPermission> query = new LambdaQueryWrapper<SysPermission>().eq(SysPermission::getPermissionCode, code);
@@ -561,9 +575,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysPermission requirePermission(Long id) {
         SysPermission permission = permissionMapper.selectById(id);
@@ -574,29 +588,29 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param menuId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param menuId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String menuNodeCode(Long menuId) {
         return "__menu:" + menuId;
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
     /**
-     * EndpointPermission 记录对象，封装当前业务流程中的不可变数据。
-     * @param permissionCode 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param method 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param path 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * EndpointPermission 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param permissionCode 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param method 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param path 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private record EndpointPermission(String permissionCode, String method, String path) {
         String displayName() {

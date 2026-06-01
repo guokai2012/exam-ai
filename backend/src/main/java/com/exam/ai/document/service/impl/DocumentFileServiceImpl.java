@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * DocumentFileServiceImpl 类，承载当前分层中的业务职责。
+ * DocumentFileServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class DocumentFileServiceImpl implements DocumentFileService {
@@ -33,7 +33,7 @@ public class DocumentFileServiceImpl implements DocumentFileService {
 
     /**
      * 构造 DocumentFileServiceImpl 实例并注入运行所需依赖。
-     * @param properties 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param properties 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public DocumentFileServiceImpl(DocumentProperties properties) {
@@ -41,9 +41,9 @@ public class DocumentFileServiceImpl implements DocumentFileService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param file 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param file 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -69,8 +69,8 @@ public class DocumentFileServiceImpl implements DocumentFileService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param file 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param file 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -90,8 +90,8 @@ public class DocumentFileServiceImpl implements DocumentFileService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param filename 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param filename 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -111,8 +111,8 @@ public class DocumentFileServiceImpl implements DocumentFileService {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param filename 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param filename 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -125,10 +125,10 @@ public class DocumentFileServiceImpl implements DocumentFileService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param path 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param fileType 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param path 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param fileType 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -144,9 +144,9 @@ public class DocumentFileServiceImpl implements DocumentFileService {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param path 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param path 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Override
@@ -170,8 +170,8 @@ public class DocumentFileServiceImpl implements DocumentFileService {
         private static final OutputStreamDiscard INSTANCE = new OutputStreamDiscard();
 
         /**
-         * 执行当前业务步骤，维护调用方需要的处理结果。
-         * @param b 业务参数，参与当前方法的校验、查询或状态变更。
+         * 执行当前业务步骤，并返回调用方需要的处理结果。
+         * @param b 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         @Override

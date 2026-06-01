@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * SecurityProperties 类，承载当前分层中的业务职责。
+ * SecurityProperties 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @ConfigurationProperties(prefix = "app.security")
 public class SecurityProperties {
@@ -23,7 +23,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public String getJwtSecret() {
@@ -31,8 +31,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param jwtSecret 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param jwtSecret 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setJwtSecret(String jwtSecret) {
@@ -41,7 +41,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public Duration getAccessTokenTtl() {
@@ -49,8 +49,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param accessTokenTtl 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param accessTokenTtl 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setAccessTokenTtl(Duration accessTokenTtl) {
@@ -59,7 +59,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public Duration getRefreshTokenTtl() {
@@ -67,8 +67,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param refreshTokenTtl 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param refreshTokenTtl 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setRefreshTokenTtl(Duration refreshTokenTtl) {
@@ -77,7 +77,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public Duration getCaptchaTtl() {
@@ -85,8 +85,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param captchaTtl 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param captchaTtl 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setCaptchaTtl(Duration captchaTtl) {
@@ -95,7 +95,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public String getRefreshTokenPepper() {
@@ -103,8 +103,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param refreshTokenPepper 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param refreshTokenPepper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setRefreshTokenPepper(String refreshTokenPepper) {
@@ -113,7 +113,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public String getRefreshCookieName() {
@@ -121,8 +121,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param refreshCookieName 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param refreshCookieName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setRefreshCookieName(String refreshCookieName) {
@@ -130,8 +130,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public boolean isRefreshCookieSecure() {
@@ -139,8 +139,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param refreshCookieSecure 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param refreshCookieSecure 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setRefreshCookieSecure(boolean refreshCookieSecure) {
@@ -149,7 +149,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public BootstrapAdmin getBootstrapAdmin() {
@@ -157,8 +157,8 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param bootstrapAdmin 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param bootstrapAdmin 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setBootstrapAdmin(BootstrapAdmin bootstrapAdmin) {
@@ -167,7 +167,7 @@ public class SecurityProperties {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public Map<String, RateLimit> getRateLimits() {
@@ -175,9 +175,9 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param M 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rateLimits 业务参数，参与当前方法的校验、查询或状态变更。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param M 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param rateLimits 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void setRateLimits(Map<String, RateLimit> rateLimits) {
@@ -185,11 +185,11 @@ public class SecurityProperties {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param name 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param defaultLimit 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param defaultWindow 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param name 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param defaultLimit 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param defaultWindow 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public RateLimit rateLimit(String name, int defaultLimit, Duration defaultWindow) {
@@ -197,10 +197,10 @@ public class SecurityProperties {
     }
 
     /**
-     * RateLimit 记录对象，封装当前业务流程中的不可变数据。
-     * @param limit 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param window 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * RateLimit 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
+     * @param limit 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param window 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     public record RateLimit(int limit, Duration window) {
     }
@@ -215,7 +215,7 @@ public class SecurityProperties {
 
         /**
          * 查询或解析业务数据，返回前端或内部流程需要的结果。
-         * @return 当前业务步骤的处理结果。
+         * @return 封装后的业务处理结果。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public String getUsername() {
@@ -223,8 +223,8 @@ public class SecurityProperties {
         }
 
         /**
-         * 执行当前业务步骤，维护调用方需要的处理结果。
-         * @param username 业务参数，参与当前方法的校验、查询或状态变更。
+         * 执行当前业务步骤，并返回调用方需要的处理结果。
+         * @param username 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public void setUsername(String username) {
@@ -233,7 +233,7 @@ public class SecurityProperties {
 
         /**
          * 查询或解析业务数据，返回前端或内部流程需要的结果。
-         * @return 当前业务步骤的处理结果。
+         * @return 封装后的业务处理结果。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public String getPassword() {
@@ -241,8 +241,8 @@ public class SecurityProperties {
         }
 
         /**
-         * 执行当前业务步骤，维护调用方需要的处理结果。
-         * @param password 业务参数，参与当前方法的校验、查询或状态变更。
+         * 执行当前业务步骤，并返回调用方需要的处理结果。
+         * @param password 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public void setPassword(String password) {
@@ -251,7 +251,7 @@ public class SecurityProperties {
 
         /**
          * 查询或解析业务数据，返回前端或内部流程需要的结果。
-         * @return 当前业务步骤的处理结果。
+         * @return 封装后的业务处理结果。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public String getNickname() {
@@ -259,8 +259,8 @@ public class SecurityProperties {
         }
 
         /**
-         * 执行当前业务步骤，维护调用方需要的处理结果。
-         * @param nickname 业务参数，参与当前方法的校验、查询或状态变更。
+         * 执行当前业务步骤，并返回调用方需要的处理结果。
+         * @param nickname 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
          * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
          */
         public void setNickname(String nickname) {

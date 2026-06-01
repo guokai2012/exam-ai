@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /**
- * AiQuestionResult 记录对象，封装当前业务流程中的不可变数据。
+ * AiQuestionResult 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "AI 识别题目结果")
 @Builder

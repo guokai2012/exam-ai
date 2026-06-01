@@ -7,14 +7,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * MyBatisPlusConfig 类，承载当前分层中的业务职责。
+ * MyBatisPlusConfig 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Configuration
 public class MyBatisPlusConfig {
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Bean

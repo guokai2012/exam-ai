@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * AdminUpdateUserRequest 记录对象，封装当前业务流程中的不可变数据。
+ * AdminUpdateUserRequest 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
  */
 @Schema(description = "后台编辑用户请求")
 @Builder

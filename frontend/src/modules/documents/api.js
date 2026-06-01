@@ -1,6 +1,7 @@
 import { api } from '../../api/http'
+import { PAGE_DEFAULTS } from '../../shared/constants'
 
-export function listDocuments(page = 1, size = 20) {
+export function listDocuments(page = PAGE_DEFAULTS.page, size = PAGE_DEFAULTS.size) {
   return api.get(`/api/documents?page=${page}&size=${size}`)
 }
 

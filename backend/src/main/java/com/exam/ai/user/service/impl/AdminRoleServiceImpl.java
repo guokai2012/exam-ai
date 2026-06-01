@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AdminRoleServiceImpl 类，承载当前分层中的业务职责。
+ * AdminRoleServiceImpl 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class AdminRoleServiceImpl implements AdminRoleService {
@@ -32,10 +32,10 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 构造 AdminRoleServiceImpl 实例并注入运行所需依赖。
-     * @param roleMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param permissionMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param rolePermissionMapper 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param userRoleMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param roleMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param permissionMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param rolePermissionMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userRoleMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AdminRoleServiceImpl(SysRoleMapper roleMapper, SysPermissionMapper permissionMapper,
@@ -49,7 +49,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
-     * @return 当前业务步骤的处理结果。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<RoleResponse> list() {
@@ -58,9 +58,9 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     }
 
     /**
-     * 创建业务数据并完成必要的状态初始化。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 创建业务数据并完成必要的默认状态初始化。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -76,9 +76,9 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param request 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -94,7 +94,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 删除或失效指定业务数据，并同步清理关联状态。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -110,8 +110,8 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 更新业务状态，并保持相关数据的一致性。
-     * @param roleId 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param permissionCodes 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param roleId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param permissionCodes 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void replaceRolePermissions(Long roleId, List<String> permissionCodes) {
         rolePermissionMapper.delete(new LambdaUpdateWrapper<SysRolePermission>().eq(SysRolePermission::getRoleId, roleId));
@@ -130,9 +130,9 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param code 业务参数，参与当前方法的校验、查询或状态变更。
-     * @param excludeId 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param code 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param excludeId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      */
     private void ensureCodeAvailable(String code, Long excludeId) {
         LambdaQueryWrapper<SysRole> query = new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleCode, code);
@@ -146,9 +146,9 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param id 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private SysRole requireRole(Long id) {
         SysRole role = roleMapper.selectById(id);
@@ -160,8 +160,8 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     /**
      * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param role 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param role 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private RoleResponse toResponse(SysRole role) {
         List<String> permissions = permissionMapper.selectList(new LambdaQueryWrapper<SysPermission>()

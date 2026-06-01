@@ -10,7 +10,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /**
- * QuestionAnalysisParser 类，承载当前分层中的业务职责。
+ * QuestionAnalysisParser 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Service
 public class QuestionAnalysisParser {
@@ -21,7 +21,7 @@ public class QuestionAnalysisParser {
 
     /**
      * 构造 QuestionAnalysisParser 实例并注入运行所需依赖。
-     * @param objectMapper 业务参数，参与当前方法的校验、查询或状态变更。
+     * @param objectMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public QuestionAnalysisParser(ObjectMapper objectMapper) {
@@ -30,8 +30,8 @@ public class QuestionAnalysisParser {
 
     /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param rawJson 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * @param rawJson 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public AiQuestionResult parse(String rawJson) {
@@ -46,8 +46,8 @@ public class QuestionAnalysisParser {
     }
 
     /**
-     * 校验业务参数或状态，阻止非法流程继续执行。
-     * @param result 业务参数，参与当前方法的校验、查询或状态变更。
+     * 校验业务参数或业务状态，阻止非法流程继续执行。
+     * @param result 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void validate(AiQuestionResult result) {
@@ -72,9 +72,9 @@ public class QuestionAnalysisParser {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param raw 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param raw 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private String extractJson(String raw) {
         if (raw == null) {
@@ -98,9 +98,9 @@ public class QuestionAnalysisParser {
     }
 
     /**
-     * 执行当前业务步骤，维护调用方需要的处理结果。
-     * @param value 业务参数，参与当前方法的校验、查询或状态变更。
-     * @return 当前业务步骤的处理结果。
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
      */
     private boolean isBlank(String value) {
         return value == null || value.isBlank();

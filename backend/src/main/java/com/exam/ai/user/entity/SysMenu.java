@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * SysMenu 类，承载当前分层中的业务职责。
+ * SysMenu 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Data
 @Schema(description = "系统菜单实体")
