@@ -9,7 +9,9 @@ import com.exam.ai.system.vo.NotificationResponse;
 public interface NotificationService {
 
     String TYPE_AI_TAGGING_FAILED = "AI_TAGGING_FAILED";
+    String TYPE_PERMISSION_SCAN_WARNING = "PERMISSION_SCAN_WARNING";
     String BUSINESS_QUESTION = "QUESTION";
+    String BUSINESS_PERMISSION_SCAN = "PERMISSION_SCAN";
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
@@ -37,4 +39,19 @@ public interface NotificationService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public void create(Long recipientId, String title, String content, String type, String businessType, Long businessId);
+
+    /**
+     * 按角色编码批量创建站内通知。
+     *
+     * <p>用于系统任务向某类管理员或业务人员发送聚合告警；如果角色下没有用户，
+     * 方法直接结束，不影响主业务流程。</p>
+     *
+     * @param roleCode 接收通知的角色编码，例如 ADMIN。
+     * @param title 通知标题。
+     * @param content 通知内容。
+     * @param type 通知类型。
+     * @param businessType 关联业务类型。
+     * @param businessId 关联业务 ID，可为空。
+     */
+    void createForRole(String roleCode, String title, String content, String type, String businessType, Long businessId);
 }

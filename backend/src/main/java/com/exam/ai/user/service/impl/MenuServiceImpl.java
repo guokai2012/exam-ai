@@ -1,6 +1,5 @@
 package com.exam.ai.user.service.impl;
 
-import com.exam.ai.user.service.AdminPermissionService;
 import com.exam.ai.user.service.MenuService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.exam.ai.common.exception.BusinessException;
@@ -27,17 +26,14 @@ public class MenuServiceImpl implements MenuService {
     private static final String MENU_GROUP_COMPONENT = "MenuGroup";
 
     private final SysMenuMapper menuMapper;
-    private final AdminPermissionService permissionService;
 
     /**
      * 构造 MenuServiceImpl 实例并注入运行所需依赖。
      * @param menuMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param permissionService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public MenuServiceImpl(SysMenuMapper menuMapper, AdminPermissionService permissionService) {
+    public MenuServiceImpl(SysMenuMapper menuMapper) {
         this.menuMapper = menuMapper;
-        this.permissionService = permissionService;
     }
 
     /**
@@ -78,11 +74,6 @@ public class MenuServiceImpl implements MenuService {
         SysMenu menu = new SysMenu();
         fill(menu, request);
         menuMapper.insert(menu);
-        if (!MENU_GROUP_COMPONENT.equals(menu.getComponent()) && !hasText(menu.getPermissionCode())) {
-            menu.setPermissionCode(permissionService.generatedViewCode(menu));
-            menuMapper.updateById(menu);
-        }
-        permissionService.syncMenuPermission(menu);
         return toResponse(menuMapper.selectById(menu.getId()), List.of());
     }
 
@@ -97,11 +88,7 @@ public class MenuServiceImpl implements MenuService {
     public MenuResponse update(Long id, SaveMenuRequest request) {
         SysMenu menu = requireMenu(id);
         fill(menu, request);
-        if (!MENU_GROUP_COMPONENT.equals(menu.getComponent()) && !hasText(menu.getPermissionCode())) {
-            menu.setPermissionCode(permissionService.generatedViewCode(menu));
-        }
         menuMapper.updateById(menu);
-        permissionService.syncMenuPermission(menu);
         return toResponse(menuMapper.selectById(id), List.of());
     }
 
@@ -134,15 +121,6 @@ public class MenuServiceImpl implements MenuService {
         menu.setSortOrder(request.sortOrder());
         menu.setStatus(request.status());
         menu.setPermissionCode(request.permissionCode());
-    }
-
-    /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param value 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
     }
 
     /**

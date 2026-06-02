@@ -121,8 +121,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
                 throw BusinessException.badRequest("权限不存在");
             }
             if (code.startsWith("__")
-                    || AdminPermissionService.TYPE_GROUP.equals(permission.getPermissionType())
-                    || AdminPermissionService.TYPE_MENU.equals(permission.getPermissionType())) {
+                    || !AdminPermissionService.TYPE_ACTION.equals(permission.getPermissionType())) {
                 throw BusinessException.badRequest("权限不能分配给角色");
             }
             rolePermissionMapper.insert(new SysRolePermission(roleId, permission.getId()));

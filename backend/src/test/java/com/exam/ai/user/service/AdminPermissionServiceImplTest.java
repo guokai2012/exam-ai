@@ -1,0 +1,220 @@
+package com.exam.ai.user.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.exam.ai.system.service.NotificationService;
+import com.exam.ai.user.entity.SysPermission;
+import com.exam.ai.user.entity.SysRolePermission;
+import com.exam.ai.user.mapper.SysPermissionMapper;
+import com.exam.ai.user.mapper.SysRolePermissionMapper;
+import com.exam.ai.user.service.impl.AdminPermissionServiceImpl;
+import com.exam.ai.user.vo.PermissionScanResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+
+class AdminPermissionServiceImplTest {
+
+    /**
+     * 验证 Controller 扫描会使用 Operation summary 命名权限、合并重复权限码名称、
+     * 对缺少 summary 的接口使用路径兜底，并删除本次扫描不存在的历史权限。
+     *
+     * @throws Exception 反射查找测试 Controller 方法失败时抛出。
+     */
+    @Test
+    void scanControllerPermissionsSynchronizesByControllerMetadata() throws Exception {
+        SysPermissionMapper permissionMapper = mock(SysPermissionMapper.class);
+        SysRolePermissionMapper rolePermissionMapper = mock(SysRolePermissionMapper.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        RequestMappingHandlerMapping handlerMapping = mock(RequestMappingHandlerMapping.class);
+        Map<Long, SysPermission> store = new LinkedHashMap<>();
+        long[] nextId = {1L};
+
+        SysPermission stale = permission("old:permission", "过期权限", AdminPermissionService.TYPE_ACTION);
+        stale.setId(99L);
+        stale.setSystemGenerated(1);
+        stale.setLastScannedAt(LocalDateTime.now().minusDays(1));
+        store.put(stale.getId(), stale);
+
+        when(permissionMapper.selectList(ArgumentMatchers.<Wrapper<SysPermission>>any())).thenAnswer(invocation -> List.copyOf(store.values()));
+        when(permissionMapper.selectById(any(Serializable.class))).thenAnswer(invocation -> store.get(((Number) invocation.getArgument(0)).longValue()));
+        when(permissionMapper.insert(any(SysPermission.class))).thenAnswer(invocation -> {
+            SysPermission permission = invocation.getArgument(0);
+            permission.setId(nextId[0]++);
+            store.put(permission.getId(), permission);
+            return 1;
+        });
+        when(permissionMapper.updateById(any(SysPermission.class))).thenAnswer(invocation -> {
+            SysPermission permission = invocation.getArgument(0);
+            store.put(permission.getId(), permission);
+            return 1;
+        });
+        when(permissionMapper.deleteById(any(Serializable.class))).thenAnswer(invocation -> {
+            store.remove(((Number) invocation.getArgument(0)).longValue());
+            return 1;
+        });
+        when(rolePermissionMapper.delete(ArgumentMatchers.<Wrapper<SysRolePermission>>any())).thenReturn(1);
+        when(handlerMapping.getHandlerMethods()).thenReturn(handlerMethods());
+
+        AdminPermissionServiceImpl service = new AdminPermissionServiceImpl(
+                permissionMapper,
+                rolePermissionMapper,
+                notificationService,
+                handlerMapping
+        );
+
+        PermissionScanResponse response = service.scanControllerPermissions();
+
+        assertThat(response.created()).isEqualTo(4);
+        assertThat(response.deleted()).isEqualTo(1);
+        assertThat(store.values()).extracting(SysPermission::getPermissionCode)
+                .anyMatch(code -> code.toString().startsWith("__controller:"))
+                .contains("test:dup", "test:missing", "test:summary");
+        assertThat(permissionByCode(store, "test:summary").getPermissionName()).isEqualTo("测试摘要");
+        assertThat(permissionByCode(store, "test:missing").getPermissionName()).isEqualTo("GET /api/test/missing");
+        assertThat(permissionByCode(store, "test:dup").getPermissionName()).isEqualTo("重复一/重复二");
+        verify(notificationService).createForRole(
+                eq("ADMIN"),
+                eq("权限扫描缺少接口摘要"),
+                org.mockito.ArgumentMatchers.contains("GET /api/test/missing"),
+                eq(NotificationService.TYPE_PERMISSION_SCAN_WARNING),
+                eq(NotificationService.BUSINESS_PERMISSION_SCAN),
+                eq(null)
+        );
+        verify(notificationService).createForRole(
+                eq("ADMIN"),
+                eq("权限扫描发现重复权限码"),
+                org.mockito.ArgumentMatchers.contains("重复一/重复二"),
+                eq(NotificationService.TYPE_PERMISSION_SCAN_WARNING),
+                eq(NotificationService.BUSINESS_PERMISSION_SCAN),
+                eq(null)
+        );
+    }
+
+    /**
+     * 创建测试权限实体。
+     *
+     * @param code 权限码。
+     * @param name 权限名称。
+     * @param type 权限类型。
+     * @return 权限实体。
+     */
+    private SysPermission permission(String code, String name, String type) {
+        SysPermission permission = new SysPermission();
+        permission.setPermissionCode(code);
+        permission.setPermissionName(name);
+        permission.setPermissionType(type);
+        return permission;
+    }
+
+    /**
+     * 按权限码读取内存权限实体。
+     *
+     * @param store 内存权限表。
+     * @param code 权限码。
+     * @return 匹配的权限实体。
+     */
+    private SysPermission permissionByCode(Map<Long, SysPermission> store, String code) {
+        return store.values().stream()
+                .filter(permission -> code.equals(permission.getPermissionCode()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    /**
+     * 构造测试用 Spring MVC 路由映射。
+     *
+     * @return 路由映射与处理方法集合。
+     * @throws Exception 反射查找测试 Controller 方法失败时抛出。
+     */
+    private Map<RequestMappingInfo, HandlerMethod> handlerMethods() throws Exception {
+        DemoController controller = new DemoController();
+        Map<RequestMappingInfo, HandlerMethod> methods = new LinkedHashMap<>();
+        methods.put(mapping("/api/test/dup-a"), handler(controller, "duplicateOne"));
+        methods.put(mapping("/api/test/dup-b"), handler(controller, "duplicateTwo"));
+        methods.put(mapping("/api/test/missing"), handler(controller, "missingSummary"));
+        methods.put(mapping("/api/test/summary"), handler(controller, "summary"));
+        return methods;
+    }
+
+    /**
+     * 创建 GET 路由映射。
+     *
+     * @param path 接口路径。
+     * @return 路由映射。
+     */
+    private RequestMappingInfo mapping(String path) {
+        return RequestMappingInfo.paths(path).methods(RequestMethod.GET).build();
+    }
+
+    /**
+     * 创建测试处理方法。
+     *
+     * @param controller 测试 Controller 实例。
+     * @param methodName 方法名。
+     * @return Spring MVC 处理方法。
+     * @throws Exception 反射查找方法失败时抛出。
+     */
+    private HandlerMethod handler(DemoController controller, String methodName) throws Exception {
+        Method method = DemoController.class.getDeclaredMethod(methodName);
+        return new HandlerMethod(controller, method);
+    }
+
+    @Tag(name = "测试接口")
+    private static class DemoController {
+
+        /**
+         * 测试标准 summary 权限扫描。
+         */
+        @GetMapping("/api/test/summary")
+        @PreAuthorize("hasAuthority('test:summary')")
+        @Operation(summary = "测试摘要")
+        void summary() {
+        }
+
+        /**
+         * 测试缺少 summary 时使用路径兜底。
+         */
+        @GetMapping("/api/test/missing")
+        @PreAuthorize("hasAuthority('test:missing')")
+        void missingSummary() {
+        }
+
+        /**
+         * 测试重复权限码第一个名称片段。
+         */
+        @GetMapping("/api/test/dup-a")
+        @PreAuthorize("hasAuthority('test:dup')")
+        @Operation(summary = "重复一")
+        void duplicateOne() {
+        }
+
+        /**
+         * 测试重复权限码第二个名称片段。
+         */
+        @GetMapping("/api/test/dup-b")
+        @PreAuthorize("hasAuthority('test:dup')")
+        @Operation(summary = "重复二")
+        void duplicateTwo() {
+        }
+    }
+}

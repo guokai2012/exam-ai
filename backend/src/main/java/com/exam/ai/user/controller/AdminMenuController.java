@@ -68,7 +68,7 @@ public class AdminMenuController {
      */
     @PostMapping("/api/admin/menus")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:create')")
-    @Operation(summary = "新建菜单", description = "创建菜单并自动同步菜单权限节点和默认查看权限。")
+    @Operation(summary = "新建菜单", description = "创建菜单，菜单权限码必须绑定 Controller 扫描生成的动作权限。")
     public ApiResponse<MenuResponse> create(@Valid @RequestBody SaveMenuRequest request) {
         return ApiResponse.ok(menuService.create(request));
     }

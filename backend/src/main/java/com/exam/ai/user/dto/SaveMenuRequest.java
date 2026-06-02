@@ -27,7 +27,7 @@ public record SaveMenuRequest(
         @NotNull Integer sortOrder,
         @Schema(description = "状态：1 启用，0 禁用")
         @NotNull Integer status,
-        @Schema(description = "访问菜单所需权限码，留空时普通菜单自动生成查看权限码")
+        @Schema(description = "访问菜单所需权限码，必须绑定 Controller 扫描生成的动作权限；无权限限制时可留空")
         @Size(max = 128) String permissionCode
 ) {
 }

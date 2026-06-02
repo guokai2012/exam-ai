@@ -8,6 +8,7 @@ import com.exam.ai.user.service.RolePermissionService;
 import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * AdminBootstrapRunner 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @Component
+@Order(10)
 public class AdminBootstrapRunner implements ApplicationRunner {
 
     private final SecurityProperties properties;
