@@ -13,8 +13,12 @@ import jakarta.validation.constraints.Size;
 @Schema(description = "保存菜单请求")
 @Builder
 public record SaveMenuRequest(
+        @Schema(description = "父菜单 ID，根菜单为空")
+        Long parentId,
         @Schema(description = "菜单名称")
         @NotBlank @Size(max = 64) String menuName,
+        @Schema(description = "前端路由路径；为空表示分组菜单")
+        @Size(max = 128) String path,
         @Schema(description = "图标名称")
         @Size(max = 64) String icon,
         @Schema(description = "排序值")
@@ -22,7 +26,9 @@ public record SaveMenuRequest(
         @Schema(description = "状态：1 启用，0 禁用")
         @NotNull Integer status,
         @Schema(description = "页面主资源 API 根路径；分组菜单必须为空")
-        @Size(max = 128) String apiPath
+        @Size(max = 128) String apiPath,
+        @Schema(description = "访问菜单所需权限码；分组菜单必须为空")
+        @Size(max = 128) String permissionCode
 ) {
 }
 

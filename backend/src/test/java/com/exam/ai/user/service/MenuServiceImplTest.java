@@ -2,9 +2,12 @@ package com.exam.ai.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.user.dto.SaveMenuRequest;
 import com.exam.ai.user.entity.SysMenu;
@@ -16,7 +19,10 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
@@ -25,13 +31,64 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 class MenuServiceImplTest {
 
+    private RequestMappingHandlerMapping handlerMapping;
+
+    /**
+     * 初始化测试用 MVC 映射依赖，菜单服务单元测试不启动 Spring 容器。
+     */
+    @BeforeEach
+    void setUp() {
+        handlerMapping = mock(RequestMappingHandlerMapping.class);
+    }
+
+    /**
+     * 验证新增叶子菜单会保存页面路径、API 路径和权限码。
+     */
+    @Test
+    void createLeafMenuPersistsRouteApiPathAndPermissionCode() {
+        SysMenuMapper menuMapper = mock(SysMenuMapper.class);
+        when(menuMapper.selectCount(ArgumentMatchers.<Wrapper<SysMenu>>any())).thenReturn(0L);
+        when(menuMapper.insert(any(SysMenu.class))).thenAnswer(invocation -> {
+            SysMenu menu = invocation.getArgument(0);
+            menu.setId(10L);
+            return 1;
+        });
+        when(menuMapper.selectById(10L)).thenAnswer(invocation -> {
+            SysMenu menu = new SysMenu();
+            menu.setId(10L);
+            menu.setMenuName("扩展菜单");
+            menu.setPath("/custom");
+            menu.setApiPath("/api/custom");
+            menu.setPermissionCode("custom:list");
+            return menu;
+        });
+        MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
+
+        SaveMenuRequest request = SaveMenuRequest.builder()
+                .menuName("扩展菜单")
+                .path("/custom")
+                .apiPath("/api/custom")
+                .permissionCode("custom:list")
+                .icon("Menu")
+                .sortOrder(10)
+                .status(1)
+                .build();
+
+        service.create(request);
+
+        ArgumentCaptor<SysMenu> captor = ArgumentCaptor.forClass(SysMenu.class);
+        verify(menuMapper).insert(captor.capture());
+        assertThat(captor.getValue().getPath()).isEqualTo("/custom");
+        assertThat(captor.getValue().getApiPath()).isEqualTo("/api/custom");
+        assertThat(captor.getValue().getPermissionCode()).isEqualTo("custom:list");
+    }
+
     /**
      * 验证分组菜单不能保存 API 路径，防止分组被前端当作页面资源入口。
      */
     @Test
     void updateRejectsApiPathForGroupMenu() {
         SysMenuMapper menuMapper = mock(SysMenuMapper.class);
-        RequestMappingHandlerMapping handlerMapping = mock(RequestMappingHandlerMapping.class);
         SysMenu groupMenu = new SysMenu();
         groupMenu.setId(1L);
         groupMenu.setMenuName("系统管理");
@@ -53,6 +110,24 @@ class MenuServiceImplTest {
     }
 
     /**
+     * 验证存在子菜单时拒绝删除父菜单，避免产生孤儿菜单。
+     */
+    @Test
+    void deleteRejectsMenuWithChildren() {
+        SysMenuMapper menuMapper = mock(SysMenuMapper.class);
+        SysMenu parent = new SysMenu();
+        parent.setId(1L);
+        parent.setMenuName("父菜单");
+        when(menuMapper.selectById(1L)).thenReturn(parent);
+        when(menuMapper.selectCount(ArgumentMatchers.<Wrapper<SysMenu>>any())).thenReturn(1L);
+        MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
+
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("存在子菜单，不能删除");
+    }
+
+    /**
      * 验证菜单 API 路径选项从 Controller 路径和 Tag 名称中生成，并将具体方法路径折叠为 API 根路径。
      *
      * @throws Exception 反射构造测试处理方法失败时抛出。
@@ -60,7 +135,6 @@ class MenuServiceImplTest {
     @Test
     void listApiPathOptionsScansControllerRootPaths() throws Exception {
         SysMenuMapper menuMapper = mock(SysMenuMapper.class);
-        RequestMappingHandlerMapping handlerMapping = mock(RequestMappingHandlerMapping.class);
         when(handlerMapping.getHandlerMethods()).thenReturn(handlerMethods());
         MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
 

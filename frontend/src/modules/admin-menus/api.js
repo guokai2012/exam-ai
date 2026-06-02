@@ -16,8 +16,16 @@ export function listMenus() {
   return api.get(adminMenuApiPath())
 }
 
+export function createMenu(payload) {
+  return api.post(adminMenuApiPath(), payload)
+}
+
 export function updateMenu(id, payload) {
   return api.put(`${adminMenuApiPath()}/${id}`, payload)
+}
+
+export function deleteMenu(id) {
+  return api.delete(`${adminMenuApiPath()}/${id}`)
 }
 
 export function listApiPathOptions() {

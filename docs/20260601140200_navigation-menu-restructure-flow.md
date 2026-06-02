@@ -49,7 +49,7 @@ flowchart TD
 ## 前后端交互点
 
 - 菜单树：`GET /api/menus/me` 返回当前用户可见菜单树。
-- 菜单管理：`GET /api/admin/menus` 查询完整菜单树，`PUT /api/admin/menus/{id}` 只维护菜单名称、图标、排序、状态和叶子菜单 `api_path`。
+- 菜单管理：`GET /api/admin/menus` 查询完整菜单树，`POST /api/admin/menus` 新增菜单，`PUT /api/admin/menus/{id}` 编辑菜单，`DELETE /api/admin/menus/{id}` 删除无子菜单节点。
 - API 路径选项：`GET /api/admin/menus/api-path-options` 扫描 Controller 根路径，供菜单绑定页面主资源 API。
 - 可用题：`GET /api/questions?state=AVAILABLE`。
 - 待确认题：`GET /api/questions?state=PARSE_PENDING_CONFIRM`。

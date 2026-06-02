@@ -88,6 +88,22 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
+     * 创建菜单节点。
+     *
+     * @param request 创建请求；path 为空时创建分组菜单。
+     * @return 创建后的菜单节点。
+     * @throws BusinessException 父菜单不存在、path 重复或分组菜单传入 API 路径时抛出。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public MenuResponse create(SaveMenuRequest request) {
+        SysMenu menu = new SysMenu();
+        fillCreateFields(menu, request);
+        menuMapper.insert(menu);
+        return toResponse(menuMapper.selectById(menu.getId()), List.of());
+    }
+
+    /**
      * 更新管理员允许维护的菜单展示字段。
      *
      * @param id 菜单 ID，必须是已存在的脚本维护菜单。
@@ -130,6 +146,70 @@ public class MenuServiceImpl implements MenuService {
         return options.entrySet().stream()
                 .map(entry -> new ApiPathOptionResponse(entry.getValue(), entry.getKey()))
                 .toList();
+    }
+
+    /**
+     * 删除菜单节点，存在子菜单时拒绝删除。
+     *
+     * @param id 菜单 ID。
+     * @throws BusinessException 菜单不存在或仍存在子菜单时抛出。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        requireMenu(id);
+        Long children = menuMapper.selectCount(new LambdaQueryWrapper<SysMenu>().eq(SysMenu::getParentId, id));
+        if (children != null && children > 0) {
+            throw BusinessException.badRequest("存在子菜单，不能删除");
+        }
+        menuMapper.deleteById(id);
+    }
+
+    /**
+     * 填充新增菜单字段，并执行分组菜单和叶子菜单的业务约束。
+     *
+     * @param menu 待创建的菜单实体。
+     * @param request 菜单创建请求。
+     * @throws BusinessException 父菜单不存在、path 重复或分组菜单字段非法时抛出。
+     */
+    private void fillCreateFields(SysMenu menu, SaveMenuRequest request) {
+        Long parentId = request.parentId();
+        if (parentId != null) {
+            requireMenu(parentId);
+        }
+        String path = normalizeBlank(request.path());
+        validatePathAvailable(path);
+
+        boolean group = !StringUtils.hasText(path);
+        if (group && StringUtils.hasText(request.apiPath())) {
+            throw BusinessException.badRequest("分组菜单不能设置 API 路径");
+        }
+
+        // 新增菜单不维护前端组件标识；分组菜单以 path 为空作为唯一判定规则。
+        menu.setParentId(parentId);
+        menu.setMenuName(request.menuName());
+        menu.setPath(path);
+        menu.setIcon(normalizeBlank(request.icon()));
+        menu.setSortOrder(request.sortOrder());
+        menu.setStatus(request.status());
+        menu.setApiPath(group ? null : normalizeBlank(request.apiPath()));
+        menu.setPermissionCode(group ? null : normalizeBlank(request.permissionCode()));
+    }
+
+    /**
+     * 校验叶子菜单页面路径未被未删除菜单占用。
+     *
+     * @param path 页面路径；为空时表示分组菜单，不做唯一性校验。
+     * @throws BusinessException 路径已存在时抛出。
+     */
+    private void validatePathAvailable(String path) {
+        if (!StringUtils.hasText(path)) {
+            return;
+        }
+        Long count = menuMapper.selectCount(new LambdaQueryWrapper<SysMenu>().eq(SysMenu::getPath, path));
+        if (count != null && count > 0) {
+            throw BusinessException.badRequest("菜单路径已存在");
+        }
     }
 
     /**

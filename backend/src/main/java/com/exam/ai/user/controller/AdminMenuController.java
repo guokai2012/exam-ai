@@ -10,9 +10,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -72,6 +74,20 @@ public class AdminMenuController {
     }
 
     /**
+     * 创建菜单节点；菜单不再维护前端组件标识。
+     *
+     * @param request 菜单创建请求。
+     * @return 封装后的业务处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当父菜单不存在、path 重复或分组字段非法时抛出。
+     */
+    @PostMapping("/api/admin/menus")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:create')")
+    @Operation(summary = "新建菜单", description = "创建菜单节点；path 为空表示分组菜单，分组菜单不能设置 API 路径。")
+    public ApiResponse<MenuResponse> create(@Valid @RequestBody SaveMenuRequest request) {
+        return ApiResponse.ok(menuService.create(request));
+    }
+
+    /**
      * 更新业务状态，并保持相关数据的一致性。
      * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
@@ -83,5 +99,20 @@ public class AdminMenuController {
     @Operation(summary = "编辑菜单", description = "只允许更新菜单名称、图标、排序、状态和页面主资源 API 路径。")
     public ApiResponse<MenuResponse> update(@Parameter(description = "菜单 ID") @PathVariable Long id, @Valid @RequestBody SaveMenuRequest request) {
         return ApiResponse.ok(menuService.update(id, request));
+    }
+
+    /**
+     * 删除没有子节点的菜单。
+     *
+     * @param id 菜单 ID。
+     * @return 封装后的业务处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当菜单不存在或仍存在子菜单时抛出。
+     */
+    @DeleteMapping("/api/admin/menus/{id}")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:delete')")
+    @Operation(summary = "删除菜单", description = "删除没有子菜单的菜单；存在子节点时拒绝删除。")
+    public ApiResponse<Void> delete(@Parameter(description = "菜单 ID") @PathVariable Long id) {
+        menuService.delete(id);
+        return ApiResponse.ok();
     }
 }
