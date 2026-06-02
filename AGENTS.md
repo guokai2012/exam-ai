@@ -56,6 +56,7 @@
 
 ### 2.3 Controller 层规范
 - Controller 必须使用 `@RestController`。
+- 所有 Controller 类必须显式使用类级 `@RequestMapping("路径")` 设置接口基础路径，禁止只在方法级 Mapping 上拼完整路径；当同一 Controller 覆盖多个资源根路径时，类级路径至少必须设置为共同前缀，例如 `/api`。
 - 接口路径统一使用 `/api/xxx` 前缀。
 - 必须遵循 RESTful 风格：查询使用 `GET`，新增使用 `POST`，修改使用 `PUT`，删除使用 `DELETE`。
 - 入参按语义使用 `@RequestBody`、`@RequestParam`、`@PathVariable`。

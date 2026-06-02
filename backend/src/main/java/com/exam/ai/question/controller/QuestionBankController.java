@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * QuestionBankController 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
  */
 @RestController
+@RequestMapping("/api")
 @Tag(name = "题库管理接口", description = "题目分类、题库查询、题目详情和题目审核确认")
 public class QuestionBankController {
 
@@ -44,7 +45,7 @@ public class QuestionBankController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @GetMapping("/api/question-categories")
+    @GetMapping("/question-categories")
     @PreAuthorize("hasAuthority('question-category:list')")
     @Operation(summary = "题目分类列表", description = "查询当前可用的题目分类。")
     public ApiResponse<List<QuestionCategoryResponse>> categories() {
@@ -57,7 +58,7 @@ public class QuestionBankController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @PostMapping("/api/question-categories")
+    @PostMapping("/question-categories")
     @PreAuthorize("hasAuthority('question-category:create')")
     @Operation(summary = "新建题目分类", description = "教师创建题目分类。")
     public ApiResponse<QuestionCategoryResponse> createCategory(@Valid @RequestBody CreateQuestionCategoryRequest request) {
@@ -75,7 +76,7 @@ public class QuestionBankController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @GetMapping("/api/questions")
+    @GetMapping("/questions")
     @PreAuthorize("hasAuthority('question:list')")
     @Operation(summary = "分页查询题目", description = "按分类、题型、状态和标签筛选题库题目。")
     public ApiResponse<IPage<QuestionResponse>> questions(@Parameter(description = "页码，从 1 开始") @RequestParam(defaultValue = "1") long page,
@@ -93,7 +94,7 @@ public class QuestionBankController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @GetMapping("/api/questions/{id}")
+    @GetMapping("/questions/{id}")
     @PreAuthorize("hasAuthority('question:detail')")
     @Operation(summary = "题目详情", description = "查询单道题目的完整内容、答案、解析和标签。")
     public ApiResponse<QuestionResponse> questionDetail(@Parameter(description = "题目 ID") @PathVariable Long id) {
@@ -107,7 +108,7 @@ public class QuestionBankController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @PostMapping("/api/questions/{id}/review")
+    @PostMapping("/questions/{id}/review")
     @PreAuthorize("hasAuthority('question:review')")
     @Operation(summary = "审核确认题目", description = "确认或驳回从文档解析得到的待确认题目。")
     public ApiResponse<QuestionResponse> review(@Parameter(description = "题目 ID") @PathVariable Long id,
