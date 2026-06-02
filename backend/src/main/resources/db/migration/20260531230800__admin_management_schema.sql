@@ -40,6 +40,35 @@ CREATE TABLE IF NOT EXISTS sys_menu (
     KEY idx_sys_menu_parent_sort (parent_id, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP PROCEDURE IF EXISTS add_column_if_missing_admin;
+
+DELIMITER $$
+CREATE PROCEDURE add_column_if_missing_admin(
+    IN table_name_param VARCHAR(64),
+    IN column_name_param VARCHAR(64),
+    IN ddl_param TEXT
+)
+BEGIN
+    IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = table_name_param
+          AND COLUMN_NAME = column_name_param) = 0 THEN
+        SET @sql = ddl_param;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+DELIMITER ;
+
+CALL add_column_if_missing_admin('sys_menu', 'create_id', 'ALTER TABLE sys_menu ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0 AFTER id');
+CALL add_column_if_missing_admin('sys_menu', 'create_time', 'ALTER TABLE sys_menu ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER create_id');
+CALL add_column_if_missing_admin('sys_menu', 'update_id', 'ALTER TABLE sys_menu ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
+CALL add_column_if_missing_admin('sys_menu', 'update_time', 'ALTER TABLE sys_menu ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
+CALL add_column_if_missing_admin('sys_menu', 'deleted', 'ALTER TABLE sys_menu ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+
+DROP PROCEDURE IF EXISTS add_column_if_missing_admin;
+
 INSERT INTO sys_permission (permission_code, permission_name) VALUES
 ('admin:role:page', '角色管理页面'),
 ('admin:role:list', '查询角色列表'),

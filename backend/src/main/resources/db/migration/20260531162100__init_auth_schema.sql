@@ -99,6 +99,67 @@ CREATE TABLE IF NOT EXISTS sys_refresh_token (
     KEY idx_refresh_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP PROCEDURE IF EXISTS add_column_if_missing_auth;
+
+DELIMITER $$
+CREATE PROCEDURE add_column_if_missing_auth(
+    IN table_name_param VARCHAR(64),
+    IN column_name_param VARCHAR(64),
+    IN ddl_param TEXT
+)
+BEGIN
+    IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = table_name_param
+          AND COLUMN_NAME = column_name_param) = 0 THEN
+        SET @sql = ddl_param;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+DELIMITER ;
+
+CALL add_column_if_missing_auth('sys_user', 'create_id', 'ALTER TABLE sys_user ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0 AFTER id');
+CALL add_column_if_missing_auth('sys_user', 'create_time', 'ALTER TABLE sys_user ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER create_id');
+CALL add_column_if_missing_auth('sys_user', 'update_id', 'ALTER TABLE sys_user ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
+CALL add_column_if_missing_auth('sys_user', 'update_time', 'ALTER TABLE sys_user ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
+CALL add_column_if_missing_auth('sys_user', 'deleted', 'ALTER TABLE sys_user ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+CALL add_column_if_missing_auth('sys_user', 'force_password_change', 'ALTER TABLE sys_user ADD COLUMN force_password_change TINYINT(1) NOT NULL DEFAULT 0');
+CALL add_column_if_missing_auth('sys_user', 'password_updated_at', 'ALTER TABLE sys_user ADD COLUMN password_updated_at DATETIME NULL');
+
+CALL add_column_if_missing_auth('sys_role', 'create_id', 'ALTER TABLE sys_role ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0 AFTER id');
+CALL add_column_if_missing_auth('sys_role', 'create_time', 'ALTER TABLE sys_role ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER create_id');
+CALL add_column_if_missing_auth('sys_role', 'update_id', 'ALTER TABLE sys_role ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
+CALL add_column_if_missing_auth('sys_role', 'update_time', 'ALTER TABLE sys_role ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
+CALL add_column_if_missing_auth('sys_role', 'deleted', 'ALTER TABLE sys_role ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+
+CALL add_column_if_missing_auth('sys_permission', 'create_id', 'ALTER TABLE sys_permission ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0 AFTER id');
+CALL add_column_if_missing_auth('sys_permission', 'create_time', 'ALTER TABLE sys_permission ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER create_id');
+CALL add_column_if_missing_auth('sys_permission', 'update_id', 'ALTER TABLE sys_permission ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
+CALL add_column_if_missing_auth('sys_permission', 'update_time', 'ALTER TABLE sys_permission ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
+CALL add_column_if_missing_auth('sys_permission', 'deleted', 'ALTER TABLE sys_permission ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+
+CALL add_column_if_missing_auth('sys_user_role', 'create_id', 'ALTER TABLE sys_user_role ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0');
+CALL add_column_if_missing_auth('sys_user_role', 'create_time', 'ALTER TABLE sys_user_role ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+CALL add_column_if_missing_auth('sys_user_role', 'update_id', 'ALTER TABLE sys_user_role ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0');
+CALL add_column_if_missing_auth('sys_user_role', 'update_time', 'ALTER TABLE sys_user_role ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing_auth('sys_user_role', 'deleted', 'ALTER TABLE sys_user_role ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0');
+
+CALL add_column_if_missing_auth('sys_role_permission', 'create_id', 'ALTER TABLE sys_role_permission ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0');
+CALL add_column_if_missing_auth('sys_role_permission', 'create_time', 'ALTER TABLE sys_role_permission ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+CALL add_column_if_missing_auth('sys_role_permission', 'update_id', 'ALTER TABLE sys_role_permission ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0');
+CALL add_column_if_missing_auth('sys_role_permission', 'update_time', 'ALTER TABLE sys_role_permission ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing_auth('sys_role_permission', 'deleted', 'ALTER TABLE sys_role_permission ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0');
+
+CALL add_column_if_missing_auth('sys_refresh_token', 'create_id', 'ALTER TABLE sys_refresh_token ADD COLUMN create_id BIGINT NOT NULL DEFAULT 0 AFTER id');
+CALL add_column_if_missing_auth('sys_refresh_token', 'create_time', 'ALTER TABLE sys_refresh_token ADD COLUMN create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER create_id');
+CALL add_column_if_missing_auth('sys_refresh_token', 'update_id', 'ALTER TABLE sys_refresh_token ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
+CALL add_column_if_missing_auth('sys_refresh_token', 'update_time', 'ALTER TABLE sys_refresh_token ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
+CALL add_column_if_missing_auth('sys_refresh_token', 'deleted', 'ALTER TABLE sys_refresh_token ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+
+DROP PROCEDURE IF EXISTS add_column_if_missing_auth;
+
 INSERT INTO sys_role (role_code, role_name) VALUES
 ('ADMIN', '管理员'),
 ('TEACHER', '教师'),
