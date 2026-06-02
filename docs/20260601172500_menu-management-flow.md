@@ -17,10 +17,11 @@
 5. 管理员可新建根菜单或子菜单；分组菜单不填写 `path`，叶子菜单填写页面 `path`、权限码并可选择 `api_path`。
 6. 管理员可编辑菜单名称、图标、排序、状态；叶子菜单可从下拉中选择 `api_path`，分组菜单不能设置 `api_path`。
 7. 系统启动、后台定时任务或管理员点击“扫描权限”时，从 Controller 注解全量同步权限。
-8. 菜单 `permission_code` 绑定扫描生成的动作权限码，例如 `admin:menu:list`、`document:list`。
-9. 登录用户进入后台布局时，前端调用 `GET /api/menus/me`。
-10. 后端根据用户权限过滤启用菜单，并移除没有可见子菜单的空分组。
-11. 前端渲染左侧菜单；分组只展开不跳转，叶子菜单按 `path` 跳转，页面请求优先使用菜单 `api_path`。
+8. 权限扫描以 Controller 类级 `@RequestMapping` 根路径反查菜单 `api_path`，命中后使用菜单名称作为权限分组名称；同一 `api_path` 绑定多个菜单时使用 `/` 合并菜单名称，未命中时回退到 `@Tag(name)`。
+9. 菜单 `permission_code` 绑定扫描生成的动作权限码，例如 `admin:menu:list`、`document:list`。
+10. 登录用户进入后台布局时，前端调用 `GET /api/menus/me`。
+11. 后端根据用户权限过滤启用菜单，并移除没有可见子菜单的空分组。
+12. 前端渲染左侧菜单；分组只展开不跳转，叶子菜单按 `path` 跳转，页面请求优先使用菜单 `api_path`。
 
 ## 异常流程
 - 管理员给分组菜单提交 `api_path`：后端返回业务异常，前端保存失败。
@@ -55,4 +56,5 @@ flowchart TD
 - 页面：`/admin/menus`、`/admin/permissions`、后台布局左侧菜单。
 - 接口：`GET /api/menus/me`、`GET /api/admin/menus`、`POST /api/admin/menus`、`PUT /api/admin/menus/{id}`、`DELETE /api/admin/menus/{id}`、`GET /api/admin/menus/api-path-options`、`POST /api/admin/permissions/scan`。
 - 权限关系：菜单只消费扫描权限，不生产权限；`sys_permission` 的数据来源是 Controller 扫描。
+- 分组命名：权限扫描用 Controller 根路径匹配菜单 `api_path`，菜单存在时权限分组名称跟随菜单名称，菜单缺失时使用 Controller `@Tag(name)`。
 - 数据关系：`path = NULL` 是分组菜单判定规则；叶子菜单通过 `api_path` 绑定页面主资源 API 根路径。

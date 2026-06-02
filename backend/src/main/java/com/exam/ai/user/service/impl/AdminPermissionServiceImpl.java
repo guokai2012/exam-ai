@@ -3,8 +3,10 @@ package com.exam.ai.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.exam.ai.system.service.NotificationService;
+import com.exam.ai.user.entity.SysMenu;
 import com.exam.ai.user.entity.SysPermission;
 import com.exam.ai.user.entity.SysRolePermission;
+import com.exam.ai.user.mapper.SysMenuMapper;
 import com.exam.ai.user.mapper.SysPermissionMapper;
 import com.exam.ai.user.mapper.SysRolePermissionMapper;
 import com.exam.ai.user.service.AdminPermissionService;
@@ -30,6 +32,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -64,6 +67,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
 
     private final SysPermissionMapper permissionMapper;
     private final SysRolePermissionMapper rolePermissionMapper;
+    private final SysMenuMapper menuMapper;
     private final NotificationService notificationService;
     private final RequestMappingHandlerMapping handlerMapping;
 
@@ -72,16 +76,19 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
      *
      * @param permissionMapper 权限表访问器。
      * @param rolePermissionMapper 角色权限关系访问器，用于删除过期权限时清理授权关系。
+     * @param menuMapper 菜单表访问器，用于按 api_path 反查权限分组展示名称。
      * @param notificationService 站内通知服务，用于推送扫描告警给管理员。
      * @param handlerMapping Spring MVC Controller 路由映射。
      */
     public AdminPermissionServiceImpl(SysPermissionMapper permissionMapper,
                                       SysRolePermissionMapper rolePermissionMapper,
+                                      SysMenuMapper menuMapper,
                                       NotificationService notificationService,
                                       @Qualifier("requestMappingHandlerMapping")
                                       RequestMappingHandlerMapping handlerMapping) {
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
+        this.menuMapper = menuMapper;
         this.notificationService = notificationService;
         this.handlerMapping = handlerMapping;
     }
@@ -202,6 +209,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
         Map<String, ScannedPermission> permissions = new LinkedHashMap<>();
         List<String> missingSummaries = new ArrayList<>();
         List<String> duplicateCodes = new ArrayList<>();
+        Map<String, String> groupNamesByApiPath = menuGroupNamesByApiPath();
         List<Map.Entry<RequestMappingInfo, HandlerMethod>> endpoints = handlerMapping.getHandlerMethods().entrySet().stream()
                 .sorted(Comparator.comparing(entry -> endpointKey(entry.getKey(), entry.getValue())))
                 .toList();
@@ -215,8 +223,9 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
             List<String> paths = paths(endpoint.getKey());
             List<String> methods = methods(endpoint.getKey());
             String endpointDescription = methods.get(0) + " " + paths.get(0);
-            String groupName = resolveGroupName(handlerMethod);
-            String groupCode = groupCode(groupName);
+            String controllerBasePath = controllerBasePath(handlerMethod);
+            String groupName = resolveGroupName(handlerMethod, controllerBasePath, groupNamesByApiPath);
+            String groupCode = groupCode(controllerBasePath, groupName);
             ScannedGroup group = groups.computeIfAbsent(groupCode,
                     code -> new ScannedGroup(code, groupName, (groups.size() + 1) * GROUP_SORT_STEP));
             String displayName = resolveDisplayName(handlerMethod, endpointDescription, missingSummaries);
@@ -260,12 +269,18 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 从 Controller 的 OpenAPI Tag 解析权限树分组名称。
+     * 从菜单 api_path 或 Controller 的 OpenAPI Tag 解析权限树分组名称。
      *
      * @param handlerMethod Spring MVC 处理方法。
-     * @return 分组名称；缺失时返回未归类接口。
+     * @param controllerBasePath Controller 类级 RequestMapping 根路径。
+     * @param groupNamesByApiPath 菜单 api_path 与菜单名称映射。
+     * @return 分组名称；菜单和 Tag 均缺失时返回未归类接口。
      */
-    private String resolveGroupName(HandlerMethod handlerMethod) {
+    private String resolveGroupName(HandlerMethod handlerMethod, String controllerBasePath, Map<String, String> groupNamesByApiPath) {
+        // 菜单是后台展示入口的权威名称来源，权限树优先跟随菜单名称展示。
+        if (hasText(controllerBasePath) && hasText(groupNamesByApiPath.get(controllerBasePath))) {
+            return groupNamesByApiPath.get(controllerBasePath);
+        }
         Tag methodTag = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), Tag.class);
         if (methodTag != null && hasText(methodTag.name())) {
             return methodTag.name().trim();
@@ -278,16 +293,68 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     }
 
     /**
-     * 生成扫描分组权限码，避免 Controller 中文 Tag 直接进入权限码。
+     * 生成扫描分组权限码，优先使用 Controller 根路径确保菜单名称补齐后仍更新同一分组。
      *
+     * @param controllerBasePath Controller 类级 RequestMapping 根路径。
      * @param groupName Controller 分组名称。
      * @return 稳定的内部权限码。
      */
-    private String groupCode(String groupName) {
+    private String groupCode(String controllerBasePath, String groupName) {
+        if (hasText(controllerBasePath)) {
+            return CONTROLLER_GROUP_PREFIX + Integer.toHexString(controllerBasePath.hashCode());
+        }
         if (!hasText(groupName)) {
             return FALLBACK_GROUP_CODE;
         }
         return CONTROLLER_GROUP_PREFIX + Integer.toHexString(groupName.hashCode());
+    }
+
+    /**
+     * 查询菜单并按 api_path 构建权限分组展示名称索引。
+     *
+     * @return api_path 到菜单名称的映射；同一路径多个菜单名称会按菜单排序用斜杠合并。
+     */
+    private Map<String, String> menuGroupNamesByApiPath() {
+        List<SysMenu> menus = menuMapper.selectList(new LambdaQueryWrapper<SysMenu>()
+                .orderByAsc(SysMenu::getSortOrder)
+                .orderByAsc(SysMenu::getId));
+        Map<String, LinkedHashSet<String>> namesByApiPath = new LinkedHashMap<>();
+        for (SysMenu menu : menus) {
+            // path 为空表示纯分组菜单，不能作为接口权限分组的直接命名来源。
+            if (!hasText(menu.getPath()) || !hasText(menu.getApiPath()) || !hasText(menu.getMenuName())) {
+                continue;
+            }
+            namesByApiPath.computeIfAbsent(menu.getApiPath().trim(), key -> new LinkedHashSet<>())
+                    .add(menu.getMenuName().trim());
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        namesByApiPath.forEach((apiPath, names) -> result.put(apiPath, String.join(NAME_SEPARATOR, names)));
+        return result;
+    }
+
+    /**
+     * 解析 Controller 类级 RequestMapping 根路径，用作菜单 api_path 反查参数和稳定分组编码来源。
+     *
+     * @param handlerMethod Spring MVC 处理方法。
+     * @return Controller 根路径；缺失时返回 null。
+     */
+    private String controllerBasePath(HandlerMethod handlerMethod) {
+        RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), RequestMapping.class);
+        if (requestMapping == null) {
+            return null;
+        }
+        List<String> values = new ArrayList<>();
+        for (String path : requestMapping.path()) {
+            if (hasText(path)) {
+                values.add(path.trim());
+            }
+        }
+        for (String value : requestMapping.value()) {
+            if (hasText(value)) {
+                values.add(value.trim());
+            }
+        }
+        return values.stream().sorted().findFirst().orElse(null);
     }
 
     /**
