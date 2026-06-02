@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -74,6 +75,7 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     public AdminPermissionServiceImpl(SysPermissionMapper permissionMapper,
                                   SysRolePermissionMapper rolePermissionMapper,
                                   SysMenuMapper menuMapper,
+                                  @Qualifier("requestMappingHandlerMapping")
                                   RequestMappingHandlerMapping handlerMapping) {
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
