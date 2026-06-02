@@ -3,6 +3,8 @@ package com.exam.ai.user.service;
 import com.exam.ai.user.vo.ApiPathOptionResponse;
 import com.exam.ai.user.vo.MenuResponse;
 import com.exam.ai.user.dto.SaveMenuRequest;
+import com.exam.ai.user.dto.SyncMenuRequest;
+import com.exam.ai.user.vo.MenuSyncResponse;
 import java.util.List;
 
 /**
@@ -48,6 +50,15 @@ public interface MenuService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public List<ApiPathOptionResponse> listApiPathOptions();
+
+    /**
+     * 同步前端扫描得到的菜单树，只补齐缺失菜单和空白开发字段。
+     *
+     * @param request 前端扫描得到的菜单树。
+     * @return 本次同步新增、更新和跳过数量。
+     * @throws com.exam.ai.common.exception.BusinessException 当菜单结构非法或分组字段非法时抛出。
+     */
+    public MenuSyncResponse syncScannedMenus(SyncMenuRequest request);
 
     /**
      * 删除指定菜单；存在子菜单时拒绝删除，避免产生孤儿菜单。

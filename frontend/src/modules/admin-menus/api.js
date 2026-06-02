@@ -31,3 +31,13 @@ export function deleteMenu(id) {
 export function listApiPathOptions() {
   return api.get(`${adminMenuApiPath()}/api-path-options`)
 }
+
+export function requestMenuScanToken() {
+  return api.post(`${adminMenuApiPath()}/scan-token`, {})
+}
+
+export function syncScannedMenus(payload, token) {
+  return api.postWithHeaders(`${adminMenuApiPath()}/scan-sync`, payload, {
+    'X-Menu-Scan-Token': token
+  })
+}

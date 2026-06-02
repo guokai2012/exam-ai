@@ -20,9 +20,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     public static final String AI_TAGGING_MAX_RETRIES = "ai.tagging.max-retries";
     public static final String AI_DOCUMENT_ANALYSIS_MAX_RETRIES = "ai.document-analysis.max-retries";
+    public static final String MENU_SCAN_TOKEN_TTL_SECONDS = "menu.scan-token.ttl-seconds";
     private static final int DEFAULT_AI_TAGGING_MAX_RETRIES = 3;
     private static final int DEFAULT_AI_DOCUMENT_ANALYSIS_MAX_RETRIES = 1;
+    private static final int DEFAULT_MENU_SCAN_TOKEN_TTL_SECONDS = 30;
+    private static final int MIN_MENU_SCAN_TOKEN_TTL_SECONDS = 1;
+    private static final int MAX_MENU_SCAN_TOKEN_TTL_SECONDS = 180;
     private static final String DOCUMENT_ANALYSIS_RETRY_CLAMP_MESSAGE = "文档 AI 解析重试次数不建议超过 3 次，已自动设置为 3 次";
+    private static final String MENU_SCAN_TOKEN_TTL_ERROR_MESSAGE = "菜单扫描临时 Token 有效期必须是整数";
+    private static final String MENU_SCAN_TOKEN_TTL_RANGE_MESSAGE = "菜单扫描临时 Token 有效期必须在 1 到 180 秒之间";
 
     private final SysConfigMapper configMapper;
 
@@ -78,6 +84,22 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     /**
+     * 查询菜单扫描临时 Token 有效期秒数。
+     *
+     * @return 菜单扫描临时 Token 有效期秒数，默认 30 秒，最大 180 秒。
+     * @throws BusinessException 配置值不是整数或超出允许范围时抛出。
+     */
+    public int menuScanTokenTtlSeconds() {
+        SysConfig config = findConfigByKey(MENU_SCAN_TOKEN_TTL_SECONDS);
+        if (config == null) {
+            return DEFAULT_MENU_SCAN_TOKEN_TTL_SECONDS;
+        }
+        int seconds = parseRetryCount(config.getConfigValue(), MENU_SCAN_TOKEN_TTL_ERROR_MESSAGE);
+        validateMenuScanTokenTtl(seconds);
+        return seconds;
+    }
+
+    /**
      * 更新业务状态，并保持相关数据的一致性。
      * @param key 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @param request 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
@@ -130,7 +152,24 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             }
             return new ValidatedConfigValue(String.valueOf(retries), "success");
         }
+        if (MENU_SCAN_TOKEN_TTL_SECONDS.equals(key)) {
+            int seconds = parseRetryCount(value, MENU_SCAN_TOKEN_TTL_ERROR_MESSAGE);
+            validateMenuScanTokenTtl(seconds);
+            return new ValidatedConfigValue(String.valueOf(seconds), "success");
+        }
         return new ValidatedConfigValue(value.trim(), "success");
+    }
+
+    /**
+     * 校验菜单扫描临时 Token 有效期，避免后台配置绕过短时授权设计。
+     *
+     * @param seconds 待校验的有效期秒数。
+     * @throws BusinessException 有效期小于 1 秒或大于 180 秒时抛出。
+     */
+    private void validateMenuScanTokenTtl(int seconds) {
+        if (seconds < MIN_MENU_SCAN_TOKEN_TTL_SECONDS || seconds > MAX_MENU_SCAN_TOKEN_TTL_SECONDS) {
+            throw BusinessException.badRequest(MENU_SCAN_TOKEN_TTL_RANGE_MESSAGE);
+        }
     }
 
     /**

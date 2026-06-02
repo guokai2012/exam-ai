@@ -2,9 +2,13 @@ package com.exam.ai.user.controller;
 
 import com.exam.ai.common.result.ApiResponse;
 import com.exam.ai.user.dto.SaveMenuRequest;
+import com.exam.ai.user.dto.SyncMenuRequest;
 import com.exam.ai.user.service.MenuService;
+import com.exam.ai.user.service.MenuScanTokenService;
 import com.exam.ai.user.vo.ApiPathOptionResponse;
+import com.exam.ai.user.vo.MenuScanTokenResponse;
 import com.exam.ai.user.vo.MenuResponse;
+import com.exam.ai.user.vo.MenuSyncResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,14 +34,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminMenuController {
 
     private final MenuService menuService;
+    private final MenuScanTokenService menuScanTokenService;
 
     /**
      * 构造 AdminMenuController 实例并注入运行所需依赖。
-     * @param menuService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param menuService 菜单业务服务。
+     * @param menuScanTokenService 菜单扫描临时 Token 服务。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    public AdminMenuController(MenuService menuService) {
+    public AdminMenuController(MenuService menuService, MenuScanTokenService menuScanTokenService) {
         this.menuService = menuService;
+        this.menuScanTokenService = menuScanTokenService;
     }
 
     /**
@@ -62,6 +70,37 @@ public class AdminMenuController {
     @Operation(summary = "菜单 API 路径选项", description = "扫描 Controller 的 API 根路径和接口标签，供菜单绑定页面主资源路径。")
     public ApiResponse<List<ApiPathOptionResponse>> apiPathOptions() {
         return ApiResponse.ok(menuService.listApiPathOptions());
+    }
+
+    /**
+     * 获取菜单扫描临时 Token，同一用户会话 5 分钟内最多获取一次。
+     *
+     * @return 菜单扫描临时 Token 和过期时间。
+     * @throws com.exam.ai.common.exception.BusinessException 当用户不是 ADMIN、无扫描权限或触发限流时抛出。
+     */
+    @PostMapping("/scan-token")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:scan')")
+    @Operation(summary = "获取菜单扫描临时 Token", description = "签发菜单扫描同步专用短时 Token，同一用户会话 5 分钟内最多获取一次。")
+    public ApiResponse<MenuScanTokenResponse> scanToken() {
+        return ApiResponse.ok(menuScanTokenService.issueToken());
+    }
+
+    /**
+     * 使用前端路由扫描结果同步菜单数据。
+     *
+     * @param token 菜单扫描临时 Token，请求头名称为 X-Menu-Scan-Token。
+     * @param request 前端扫描得到的菜单树。
+     * @return 菜单同步结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当临时 Token 无效、过期、重复使用或菜单结构非法时抛出。
+     */
+    @PostMapping("/scan-sync")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:scan')")
+    @Operation(summary = "扫描同步菜单", description = "校验短时 Token 后，同步前端 Router 扫描得到的菜单数据。")
+    public ApiResponse<MenuSyncResponse> scanSync(
+            @RequestHeader(name = MenuScanTokenService.TOKEN_HEADER, required = false) String token,
+            @Valid @RequestBody SyncMenuRequest request) {
+        menuScanTokenService.consumeToken(token);
+        return ApiResponse.ok(menuService.syncScannedMenus(request));
     }
 
     /**

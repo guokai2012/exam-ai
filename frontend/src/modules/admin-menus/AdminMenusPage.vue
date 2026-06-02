@@ -8,7 +8,10 @@
     <el-card shadow="never">
       <div class="toolbar compact-toolbar">
         <div><p class="eyebrow">Admin Menus</p><h2>菜单管理</h2></div>
-        <el-button type="primary" @click="openCreate()">新建菜单</el-button>
+        <div class="toolbar-actions">
+          <el-button :loading="scanning" @click="handleScanMenus">扫描菜单</el-button>
+          <el-button type="primary" @click="openCreate()">新建菜单</el-button>
+        </div>
       </div>
       <el-table :data="menus" row-key="id" border default-expand-all>
         <el-table-column label="操作" width="220" fixed="left">
@@ -113,13 +116,15 @@ import {
   ElTableColumn,
   ElTag
 } from 'element-plus'
-import { createMenu, deleteMenu, listApiPathOptions, listMenus, updateMenu } from './api'
+import { createMenu, deleteMenu, listApiPathOptions, listMenus, requestMenuScanToken, syncScannedMenus, updateMenu } from './api'
+import { scanRouterMenus } from './menuScanner'
 import { USER_STATUS } from '../../shared/constants'
 
 const menus = ref([])
 const apiPathOptions = ref([])
 const visible = ref(false)
 const saving = ref(false)
+const scanning = ref(false)
 const formRef = ref(null)
 const parentOptions = ref([])
 const form = reactive({
@@ -252,6 +257,27 @@ async function remove(row) {
 }
 
 /**
+ * 扫描当前前端路由菜单元数据，并使用后端短时 Token 同步到菜单表。
+ */
+async function handleScanMenus() {
+  try {
+    await ElMessageBox.confirm('扫描会补齐前端路由中声明但菜单表缺失的数据，不会删除已有菜单。确认继续？', '扫描菜单')
+    scanning.value = true
+    const tokenResponse = await requestMenuScanToken()
+    const payload = scanRouterMenus()
+    const result = await syncScannedMenus(payload, tokenResponse.token)
+    ElMessage.success(`菜单扫描完成，新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`)
+    await load()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '菜单扫描失败')
+    }
+  } finally {
+    scanning.value = false
+  }
+}
+
+/**
  * 构造父菜单下拉选项，保留层级缩进以便管理员选择新增位置。
  *
  * @param {Array} items 菜单树。
@@ -284,3 +310,11 @@ onMounted(async () => {
   await Promise.all([load(), loadApiPathOptions()])
 })
 </script>
+
+<style scoped>
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+</style>

@@ -46,6 +46,13 @@ class SystemConfigServiceTest {
     }
 
     @Test
+    void shouldUseDefaultMenuScanTokenTtlWhenConfigMissing() {
+        when(configMapper.selectOne(any())).thenReturn(null);
+
+        assertThat(systemConfigService.menuScanTokenTtlSeconds()).isEqualTo(30);
+    }
+
+    @Test
     void shouldClampRuntimeDocumentAnalysisRetryCountWhenConfigGreaterThanThree() {
         SysConfig config = new SysConfig();
         config.setConfigValue("9");
@@ -110,6 +117,19 @@ class SystemConfigServiceTest {
                 new UpdateSystemConfigRequest("abc")
         ))).isInstanceOf(BusinessException.class)
                 .hasMessage("文档 AI 解析最大重试次数必须是整数");
+    }
+
+    @Test
+    void shouldRejectMenuScanTokenTtlGreaterThanMax() {
+        SysConfig config = new SysConfig();
+        config.setConfigKey(SystemConfigService.MENU_SCAN_TOKEN_TTL_SECONDS);
+        when(configMapper.selectOne(any())).thenReturn(config);
+
+        assertThatThrownBy(() -> CurrentUserUtils.runAs(principal(), (Callable<SystemConfigUpdateResult>) () -> systemConfigService.updateConfig(
+                SystemConfigService.MENU_SCAN_TOKEN_TTL_SECONDS,
+                new UpdateSystemConfigRequest("181")
+        ))).isInstanceOf(BusinessException.class)
+                .hasMessage("菜单扫描临时 Token 有效期必须在 1 到 180 秒之间");
     }
 
     private UserPrincipal principal() {

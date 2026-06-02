@@ -12,6 +12,7 @@ public interface SystemConfigService {
 
     String AI_TAGGING_MAX_RETRIES = "ai.tagging.max-retries";
     String AI_DOCUMENT_ANALYSIS_MAX_RETRIES = "ai.document-analysis.max-retries";
+    String MENU_SCAN_TOKEN_TTL_SECONDS = "menu.scan-token.ttl-seconds";
 
     /**
      * 查询业务数据集合，并按调用场景组织返回结构。
@@ -31,6 +32,14 @@ public interface SystemConfigService {
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
     public int aiDocumentAnalysisMaxRetries();
+
+    /**
+     * 查询菜单扫描临时 Token 有效期秒数。
+     *
+     * @return 菜单扫描临时 Token 有效期秒数，默认 30 秒，最大 180 秒。
+     * @throws com.exam.ai.common.exception.BusinessException 配置值不是整数或超出允许范围时抛出。
+     */
+    public int menuScanTokenTtlSeconds();
     /**
      * 更新业务状态，并保持相关数据的一致性。
      * @param key 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。

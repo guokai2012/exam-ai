@@ -16,6 +16,7 @@ import lombok.EqualsAndHashCode;
 public class SysMenu extends BaseEntity {
 
     private Long parentId;
+    private String menuKey;
     private String menuName;
     private String path;
     private String apiPath;

@@ -10,10 +10,13 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.user.dto.SaveMenuRequest;
+import com.exam.ai.user.dto.SyncMenuItemRequest;
+import com.exam.ai.user.dto.SyncMenuRequest;
 import com.exam.ai.user.entity.SysMenu;
 import com.exam.ai.user.mapper.SysMenuMapper;
 import com.exam.ai.user.service.impl.MenuServiceImpl;
 import com.exam.ai.user.vo.ApiPathOptionResponse;
+import com.exam.ai.user.vo.MenuSyncResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -147,6 +150,94 @@ class MenuServiceImplTest {
     }
 
     /**
+     * 验证扫描同步只补齐空白开发字段，不覆盖管理员维护的展示字段。
+     */
+    @Test
+    void syncScannedMenusFillsMissingFieldsWithoutOverwritingAdminFields() {
+        SysMenuMapper menuMapper = mock(SysMenuMapper.class);
+        Map<Long, SysMenu> store = new LinkedHashMap<>();
+        SysMenu existing = menu(1L, "管理员改名", "/documents", null, null, "CustomIcon", 99, 0);
+        store.put(existing.getId(), existing);
+        when(menuMapper.selectList(ArgumentMatchers.<Wrapper<SysMenu>>any())).thenAnswer(invocation -> List.copyOf(store.values()));
+        when(menuMapper.updateById(any(SysMenu.class))).thenAnswer(invocation -> {
+            SysMenu menu = invocation.getArgument(0);
+            store.put(menu.getId(), menu);
+            return 1;
+        });
+        MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
+
+        MenuSyncResponse response = service.syncScannedMenus(new SyncMenuRequest(List.of(new SyncMenuItemRequest(
+                "menu:/documents",
+                "我的文档",
+                "/documents",
+                "/api/documents",
+                "Document",
+                10,
+                1,
+                "document:list",
+                List.of()
+        ))));
+
+        assertThat(response.updated()).isEqualTo(1);
+        assertThat(existing.getMenuName()).isEqualTo("管理员改名");
+        assertThat(existing.getIcon()).isEqualTo("CustomIcon");
+        assertThat(existing.getSortOrder()).isEqualTo(99);
+        assertThat(existing.getStatus()).isZero();
+        assertThat(existing.getMenuKey()).isEqualTo("menu:/documents");
+        assertThat(existing.getApiPath()).isEqualTo("/api/documents");
+        assertThat(existing.getPermissionCode()).isEqualTo("document:list");
+    }
+
+    /**
+     * 验证扫描同步会创建缺失分组和子菜单，并清空分组菜单的 API 路径与权限码。
+     */
+    @Test
+    void syncScannedMenusCreatesMissingGroupAndChildren() {
+        SysMenuMapper menuMapper = mock(SysMenuMapper.class);
+        Map<Long, SysMenu> store = new LinkedHashMap<>();
+        long[] nextId = {1L};
+        when(menuMapper.selectList(ArgumentMatchers.<Wrapper<SysMenu>>any())).thenAnswer(invocation -> List.copyOf(store.values()));
+        when(menuMapper.insert(any(SysMenu.class))).thenAnswer(invocation -> {
+            SysMenu menu = invocation.getArgument(0);
+            menu.setId(nextId[0]++);
+            store.put(menu.getId(), menu);
+            return 1;
+        });
+        MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
+
+        MenuSyncResponse response = service.syncScannedMenus(new SyncMenuRequest(List.of(new SyncMenuItemRequest(
+                "group:/questions",
+                "题库管理",
+                null,
+                "/api/questions",
+                "Collection",
+                20,
+                1,
+                "question:list",
+                List.of(new SyncMenuItemRequest(
+                        "menu:/questions/available",
+                        "可用题",
+                        "/questions/available",
+                        "/api/questions",
+                        "Collection",
+                        10,
+                        1,
+                        "question:list",
+                        List.of()
+                ))
+        ))));
+
+        assertThat(response.created()).isEqualTo(2);
+        SysMenu group = store.get(1L);
+        SysMenu child = store.get(2L);
+        assertThat(group.getPath()).isNull();
+        assertThat(group.getApiPath()).isNull();
+        assertThat(group.getPermissionCode()).isNull();
+        assertThat(child.getParentId()).isEqualTo(group.getId());
+        assertThat(child.getPath()).isEqualTo("/questions/available");
+    }
+
+    /**
      * 构造测试用 Spring MVC 路由映射。
      *
      * @return 路由映射与处理方法集合。
@@ -182,6 +273,32 @@ class MenuServiceImplTest {
     private HandlerMethod handler(Object controller, String methodName) throws Exception {
         Method method = controller.getClass().getDeclaredMethod(methodName);
         return new HandlerMethod(controller, method);
+    }
+
+    /**
+     * 创建测试菜单实体。
+     *
+     * @param id 菜单 ID。
+     * @param name 菜单名称。
+     * @param path 页面路径。
+     * @param apiPath API 根路径。
+     * @param permissionCode 权限码。
+     * @param icon 图标。
+     * @param sortOrder 排序值。
+     * @param status 状态。
+     * @return 菜单实体。
+     */
+    private SysMenu menu(Long id, String name, String path, String apiPath, String permissionCode, String icon, Integer sortOrder, Integer status) {
+        SysMenu menu = new SysMenu();
+        menu.setId(id);
+        menu.setMenuName(name);
+        menu.setPath(path);
+        menu.setApiPath(apiPath);
+        menu.setPermissionCode(permissionCode);
+        menu.setIcon(icon);
+        menu.setSortOrder(sortOrder);
+        menu.setStatus(status);
+        return menu;
     }
 
     @Tag(name = "后台用户管理接口")

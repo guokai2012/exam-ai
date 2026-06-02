@@ -109,6 +109,9 @@ export const api = {
   post(path, body) {
     return request(path, { method: 'POST', body })
   },
+  postWithHeaders(path, body, headers) {
+    return request(path, { method: 'POST', body, headers })
+  },
   put(path, body) {
     return request(path, { method: 'PUT', body })
   },

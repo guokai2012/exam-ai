@@ -48,4 +48,25 @@ public final class RedisKeys {
     public static String rate(String type, String discriminator) {
         return "rate:" + type + ":" + discriminator;
     }
+
+    /**
+     * 生成菜单扫描临时 Token 的 Redis Key。
+     *
+     * @param tokenHash 临时 Token 哈希值。
+     * @return 菜单扫描临时 Token Redis Key。
+     */
+    public static String menuScanToken(String tokenHash) {
+        return "menu:scan-token:" + tokenHash;
+    }
+
+    /**
+     * 生成菜单扫描临时 Token 获取限流 Redis Key。
+     *
+     * @param userId 当前管理员用户 ID。
+     * @param sessionId 当前登录会话 ID。
+     * @return 菜单扫描临时 Token 限流 Redis Key。
+     */
+    public static String menuScanTokenLimit(Long userId, String sessionId) {
+        return "menu:scan-token:limit:" + userId + ":" + sessionId;
+    }
 }

@@ -61,6 +61,16 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
+     * 创建自定义提示的请求频率过高业务异常。
+     *
+     * @param message 返回给前端的限流提示。
+     * @return 请求频率过高业务异常。
+     */
+    public static BusinessException tooManyRequests(String message) {
+        return new BusinessException("TOO_MANY_REQUESTS", message, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    /**
      * 执行当前业务步骤，并返回调用方需要的处理结果。
      * @param message 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @return 封装后的业务处理结果。
