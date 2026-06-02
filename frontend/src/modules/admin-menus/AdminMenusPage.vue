@@ -11,6 +11,13 @@
         <el-button type="primary" @click="openCreate()">新建菜单</el-button>
       </div>
       <el-table :data="menus" row-key="id" border default-expand-all>
+        <el-table-column label="操作" width="220" fixed="left">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openCreate(row)">新增子菜单</el-button>
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="menuName" label="菜单名称" min-width="160" />
         <el-table-column label="页面路径" min-width="180">
           <template #default="{ row }">
@@ -26,13 +33,6 @@
         <el-table-column prop="sortOrder" label="排序" width="90" />
         <el-table-column label="状态" width="90">
           <template #default="{ row }">{{ row.status === USER_STATUS.enabled ? '启用' : '禁用' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="220">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openCreate(row)">新增子菜单</el-button>
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="remove(row)">删除</el-button>
-          </template>
         </el-table-column>
       </el-table>
     </el-card>

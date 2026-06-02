@@ -18,6 +18,14 @@
         </div>
       </div>
       <el-table :data="users" border>
+        <el-table-column label="操作" width="320" fixed="left">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="warning" @click="kick(row)">踢下线</el-button>
+            <el-button link type="warning" @click="openReset(row)">重置密码</el-button>
+            <el-button link type="danger" @click="disable(row)">禁用</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="账号" />
         <el-table-column prop="nickname" label="昵称" />
@@ -31,14 +39,6 @@
         </el-table-column>
         <el-table-column label="首次改密" width="110">
           <template #default="{ row }">{{ row.forcePasswordChange ? '是' : '否' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="320">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" @click="kick(row)">踢下线</el-button>
-            <el-button link type="warning" @click="openReset(row)">重置密码</el-button>
-            <el-button link type="danger" @click="disable(row)">禁用</el-button>
-          </template>
         </el-table-column>
       </el-table>
       <el-pagination

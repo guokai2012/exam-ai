@@ -11,18 +11,18 @@
         <el-button type="primary" @click="openCreate">新建角色</el-button>
       </div>
       <el-table :data="roles" border>
+        <el-table-column label="操作" width="160" fixed="left">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="remove(row)">删除</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="roleCode" label="角色编码" />
         <el-table-column prop="roleName" label="角色名称" />
         <el-table-column label="权限">
           <template #default="{ row }">
             <el-tag v-for="permission in row.permissions" :key="permission" type="info">{{ permission }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="160">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
