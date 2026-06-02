@@ -25,9 +25,12 @@ SELECT u.id, r.id
 FROM sys_user u
 JOIN sys_role r ON r.role_code = 'ADMIN'
 WHERE u.username = 'admin'
+  AND u.deleted = 0
+  AND r.deleted = 0
   AND NOT EXISTS (
       SELECT 1
       FROM sys_user_role ur
       WHERE ur.user_id = u.id
         AND ur.role_id = r.id
+        AND ur.deleted = 0
   );

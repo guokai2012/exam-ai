@@ -89,7 +89,7 @@ INSERT INTO sys_permission (
 )
 SELECT NULL, NULL, '__uncategorized', '未归类权限', 'GROUP', 9999, 1
 WHERE NOT EXISTS (
-    SELECT 1 FROM sys_permission WHERE permission_code = '__uncategorized'
+    SELECT 1 FROM sys_permission WHERE permission_code = '__uncategorized' AND deleted = 0
 );
 
 INSERT INTO sys_permission (
@@ -109,19 +109,22 @@ SELECT NULL,
        m.sort_order,
        1
 FROM sys_menu m
-WHERE NOT EXISTS (
-    SELECT 1 FROM sys_permission p WHERE p.permission_code = CONCAT('__menu:', m.id)
+WHERE m.deleted = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM sys_permission p WHERE p.permission_code = CONCAT('__menu:', m.id) AND p.deleted = 0
 );
 
 UPDATE sys_permission p
-JOIN sys_menu m ON p.permission_code = CONCAT('__menu:', m.id)
+JOIN sys_menu m ON p.permission_code = CONCAT('__menu:', m.id) AND m.deleted = 0
 LEFT JOIN sys_permission parent_permission ON parent_permission.permission_code = CONCAT('__menu:', m.parent_id)
+    AND parent_permission.deleted = 0
 SET p.parent_id = parent_permission.id,
     p.menu_id = m.id,
     p.permission_name = m.menu_name,
     p.permission_type = CASE WHEN m.component = 'MenuGroup' THEN 'GROUP' ELSE 'MENU' END,
     p.sort_order = m.sort_order,
-    p.system_generated = 1;
+    p.system_generated = 1
+WHERE p.deleted = 0;
 
 INSERT INTO sys_permission (
     parent_id,
@@ -141,26 +144,32 @@ SELECT menu_permission.id,
        1
 FROM sys_menu m
 JOIN sys_permission menu_permission ON menu_permission.permission_code = CONCAT('__menu:', m.id)
-WHERE m.permission_code IS NOT NULL
+    AND menu_permission.deleted = 0
+WHERE m.deleted = 0
+  AND m.permission_code IS NOT NULL
   AND m.permission_code <> ''
   AND NOT EXISTS (
-      SELECT 1 FROM sys_permission p WHERE p.permission_code = m.permission_code
+      SELECT 1 FROM sys_permission p WHERE p.permission_code = m.permission_code AND p.deleted = 0
   );
 
 UPDATE sys_permission p
-JOIN sys_menu m ON m.permission_code = p.permission_code
+JOIN sys_menu m ON m.permission_code = p.permission_code AND m.deleted = 0
 JOIN sys_permission menu_permission ON menu_permission.permission_code = CONCAT('__menu:', m.id)
+    AND menu_permission.deleted = 0
 SET p.parent_id = menu_permission.id,
     p.menu_id = m.id,
     p.permission_type = 'VIEW',
     p.sort_order = 0,
     p.system_generated = 1
-WHERE m.permission_code IS NOT NULL
+WHERE p.deleted = 0
+  AND m.permission_code IS NOT NULL
   AND m.permission_code <> '';
 
 UPDATE sys_permission p
 JOIN sys_permission uncategorized ON uncategorized.permission_code = '__uncategorized'
+    AND uncategorized.deleted = 0
 SET p.parent_id = uncategorized.id
-WHERE p.parent_id IS NULL
+WHERE p.deleted = 0
+  AND p.parent_id IS NULL
   AND p.permission_type = 'ACTION'
   AND p.permission_code <> '__uncategorized';

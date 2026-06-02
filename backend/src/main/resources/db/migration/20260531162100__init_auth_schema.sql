@@ -1,45 +1,90 @@
+-- 初始化认证、角色、权限与令牌表。
+-- 依赖字段仅作为普通字段或索引使用，不建立数据库外键或级联约束。
+
 CREATE TABLE IF NOT EXISTS sys_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     username VARCHAR(64) NOT NULL,
     password_hash VARCHAR(120) NOT NULL,
     nickname VARCHAR(64) NOT NULL,
     status TINYINT NOT NULL DEFAULT 1,
+    force_password_change TINYINT(1) NOT NULL DEFAULT 0,
     last_login_at DATETIME NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_sys_user_username (username)
+    password_updated_at DATETIME NULL,
+    UNIQUE KEY uk_sys_user_username (username, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_role (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     role_code VARCHAR(64) NOT NULL,
     role_name VARCHAR(64) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_sys_role_code (role_code)
+    UNIQUE KEY uk_sys_role_code (role_code, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_permission (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
+    parent_id BIGINT NULL,
+    menu_id BIGINT NULL,
     permission_code VARCHAR(128) NOT NULL,
     permission_name VARCHAR(128) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_sys_permission_code (permission_code)
+    permission_type VARCHAR(32) NOT NULL DEFAULT 'ACTION',
+    sort_order INT NOT NULL DEFAULT 0,
+    system_generated TINYINT(1) NOT NULL DEFAULT 0,
+    last_scanned_at DATETIME NULL,
+    UNIQUE KEY uk_sys_permission_code (permission_code, deleted),
+    KEY idx_sys_permission_parent_sort (parent_id, sort_order),
+    KEY idx_sys_permission_menu (menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_user_role (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id)
+    UNIQUE KEY uk_sys_user_role_pair (user_id, role_id, deleted),
+    KEY idx_sys_user_role_user (user_id),
+    KEY idx_sys_user_role_role (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_role_permission (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     role_id BIGINT NOT NULL,
     permission_id BIGINT NOT NULL,
-    PRIMARY KEY (role_id, permission_id)
+    UNIQUE KEY uk_sys_role_permission_pair (role_id, permission_id, deleted),
+    KEY idx_sys_role_permission_role (role_id),
+    KEY idx_sys_role_permission_permission (permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_refresh_token (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     token_hash VARCHAR(128) NOT NULL,
     user_id BIGINT NOT NULL,
     session_id VARCHAR(64) NOT NULL,
@@ -49,8 +94,7 @@ CREATE TABLE IF NOT EXISTS sys_refresh_token (
     replaced_by_hash VARCHAR(128) NULL,
     created_ip VARCHAR(64) NULL,
     user_agent VARCHAR(512) NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_refresh_token_hash (token_hash),
+    UNIQUE KEY uk_refresh_token_hash (token_hash, deleted),
     KEY idx_refresh_user_session (user_id, session_id),
     KEY idx_refresh_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -87,8 +131,11 @@ JOIN sys_permission p ON p.permission_code IN (
     'auth:logout', 'auth:me', 'password:change'
 )
 WHERE r.role_code = 'ADMIN'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_role_permission (role_id, permission_id)
@@ -100,8 +147,11 @@ JOIN sys_permission p ON p.permission_code IN (
     'question:list', 'question:detail', 'question:review'
 )
 WHERE r.role_code = 'TEACHER'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_role_permission (role_id, permission_id)
@@ -111,6 +161,9 @@ JOIN sys_permission p ON p.permission_code IN (
     'auth:logout', 'auth:me', 'password:change'
 )
 WHERE r.role_code = 'STUDENT'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );

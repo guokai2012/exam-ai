@@ -1,5 +1,13 @@
+-- 初始化文档分析、题库、系统配置和通知表。
+-- 依赖字段仅作为普通字段或索引使用，不建立数据库外键或级联约束。
+
 CREATE TABLE IF NOT EXISTS exam_document (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     original_filename VARCHAR(255) NOT NULL,
     stored_filename VARCHAR(255) NOT NULL,
     file_type VARCHAR(16) NOT NULL,
@@ -9,8 +17,6 @@ CREATE TABLE IF NOT EXISTS exam_document (
     extracted_text MEDIUMTEXT NULL,
     status VARCHAR(32) NOT NULL,
     uploaded_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_document_uploaded_by (uploaded_by),
     KEY idx_document_status (status),
     KEY idx_document_sha256 (sha256)
@@ -18,20 +24,27 @@ CREATE TABLE IF NOT EXISTS exam_document (
 
 CREATE TABLE IF NOT EXISTS exam_document_analysis (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     document_id BIGINT NOT NULL,
     model_name VARCHAR(128) NULL,
     status VARCHAR(32) NOT NULL,
     raw_json MEDIUMTEXT NULL,
     error_message VARCHAR(1024) NULL,
-    created_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_analysis_document_id (document_id),
-    KEY idx_analysis_created_by (created_by)
+    KEY idx_analysis_create_id (create_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS exam_document_analysis_chunk (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     analysis_id BIGINT NOT NULL,
     document_id BIGINT NOT NULL,
     chunk_index INT NOT NULL,
@@ -47,27 +60,32 @@ CREATE TABLE IF NOT EXISTS exam_document_analysis_chunk (
     error_message VARCHAR(1024) NULL,
     started_at DATETIME NULL,
     finished_at DATETIME NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_analysis_chunk_index (analysis_id, chunk_index),
+    UNIQUE KEY uk_analysis_chunk_index (analysis_id, chunk_index, deleted),
     KEY idx_chunk_document_status (document_id, status),
     KEY idx_chunk_hash (chunk_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS exam_question_category (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     category_name VARCHAR(128) NOT NULL,
     description VARCHAR(512) NULL,
     status TINYINT NOT NULL DEFAULT 1,
-    created_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_question_category_name (category_name),
+    UNIQUE KEY uk_question_category_name (category_name, deleted),
     KEY idx_question_category_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS exam_question_bank (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     category_id BIGINT NOT NULL,
     question_type VARCHAR(32) NOT NULL,
     stem TEXT NOT NULL,
@@ -84,10 +102,7 @@ CREATE TABLE IF NOT EXISTS exam_question_bank (
     tag_error_message VARCHAR(1024) NULL,
     tag_retry_count INT NOT NULL DEFAULT 0,
     tag_notified_at DATETIME NULL,
-    created_by BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_question_owner_category_stem_hash (created_by, category_id, stem_hash),
+    UNIQUE KEY uk_question_owner_category_stem_hash (create_id, category_id, stem_hash, deleted),
     KEY idx_question_category_id (category_id),
     KEY idx_question_type (question_type),
     KEY idx_question_state (state)
@@ -95,31 +110,45 @@ CREATE TABLE IF NOT EXISTS exam_question_bank (
 
 CREATE TABLE IF NOT EXISTS exam_question_tag (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     tag_name VARCHAR(128) NOT NULL,
     description VARCHAR(512) NULL,
     status TINYINT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_question_tag_name (tag_name),
+    UNIQUE KEY uk_question_tag_name (tag_name, deleted),
     KEY idx_question_tag_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS exam_question_tag_relation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     question_id BIGINT NOT NULL,
     tag_id BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (question_id, tag_id)
+    UNIQUE KEY uk_question_tag_relation_pair (question_id, tag_id, deleted),
+    KEY idx_question_tag_relation_question (question_id),
+    KEY idx_question_tag_relation_tag (tag_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS exam_question_source (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     question_id BIGINT NOT NULL,
     document_id BIGINT NOT NULL,
     analysis_id BIGINT NOT NULL,
     chunk_id BIGINT NULL,
     confidence DECIMAL(5,4) NULL,
     sort_order INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_question_source_question_id (question_id),
     KEY idx_question_source_document_id (document_id),
     KEY idx_question_source_analysis_id (analysis_id),
@@ -127,18 +156,27 @@ CREATE TABLE IF NOT EXISTS exam_question_source (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_config (
-    config_key VARCHAR(128) PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
+    config_key VARCHAR(128) NOT NULL,
     config_value VARCHAR(512) NOT NULL,
     config_name VARCHAR(128) NOT NULL,
     description VARCHAR(512) NULL,
     value_type VARCHAR(32) NOT NULL,
-    updated_by BIGINT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    UNIQUE KEY uk_sys_config_key (config_key, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sys_notification (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     recipient_id BIGINT NOT NULL,
     title VARCHAR(128) NOT NULL,
     content VARCHAR(1024) NOT NULL,
@@ -146,8 +184,7 @@ CREATE TABLE IF NOT EXISTS sys_notification (
     business_type VARCHAR(64) NULL,
     business_id BIGINT NULL,
     read_at DATETIME NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    KEY idx_notification_recipient (recipient_id, read_at, created_at),
+    KEY idx_notification_recipient (recipient_id, read_at, create_time),
     KEY idx_notification_business (business_type, business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -184,8 +221,11 @@ JOIN sys_permission p ON p.permission_code IN (
     'document:content', 'document:analyze', 'document:analysis-latest'
 )
 WHERE r.role_code = 'TEACHER'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_role_permission (role_id, permission_id)
@@ -196,8 +236,11 @@ JOIN sys_permission p ON p.permission_code IN (
     'notification:page', 'notification:list', 'notification:mark-read'
 )
 WHERE r.role_code = 'ADMIN'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_role_permission (role_id, permission_id)
@@ -205,6 +248,9 @@ SELECT r.id, p.id
 FROM sys_role r
 JOIN sys_permission p ON p.permission_code IN ('notification:page', 'notification:list', 'notification:mark-read')
 WHERE r.role_code = 'TEACHER'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );

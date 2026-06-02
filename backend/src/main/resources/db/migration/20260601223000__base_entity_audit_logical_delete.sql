@@ -181,36 +181,59 @@ CALL add_column_if_missing('sys_notification', 'deleted', 'ALTER TABLE sys_notif
 
 DROP PROCEDURE IF EXISTS add_column_if_missing;
 
-UPDATE exam_document SET create_id = uploaded_by WHERE create_id = 0 AND uploaded_by IS NOT NULL;
-UPDATE exam_document_analysis SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL;
-UPDATE exam_question_category SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL;
-UPDATE exam_question_bank SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL;
-UPDATE sys_config SET update_id = updated_by WHERE update_id = 0 AND updated_by IS NOT NULL;
+DROP PROCEDURE IF EXISTS run_sql_if_column_exists;
 
-UPDATE sys_user SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_user SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE sys_role SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_permission SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_refresh_token SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_menu SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_menu SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_document SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_document SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_document_analysis SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_document_analysis SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_document_analysis_chunk SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_document_analysis_chunk SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_question_category SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_question_category SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_question_bank SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_question_bank SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_question_tag SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_question_tag SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE exam_question_tag_relation SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE exam_question_source SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_config SET create_time = created_at WHERE created_at IS NOT NULL;
-UPDATE sys_config SET update_time = updated_at WHERE updated_at IS NOT NULL;
-UPDATE sys_notification SET create_time = created_at WHERE created_at IS NOT NULL;
+DELIMITER $$
+CREATE PROCEDURE run_sql_if_column_exists(
+    IN table_name_param VARCHAR(64),
+    IN column_name_param VARCHAR(64),
+    IN sql_param TEXT
+)
+BEGIN
+    IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = table_name_param
+          AND COLUMN_NAME = column_name_param) > 0 THEN
+        SET @sql = sql_param;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+DELIMITER ;
+
+CALL run_sql_if_column_exists('exam_document', 'uploaded_by', 'UPDATE exam_document SET create_id = uploaded_by WHERE create_id = 0 AND uploaded_by IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document_analysis', 'created_by', 'UPDATE exam_document_analysis SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_category', 'created_by', 'UPDATE exam_question_category SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_bank', 'created_by', 'UPDATE exam_question_bank SET create_id = created_by WHERE create_id = 0 AND created_by IS NOT NULL');
+CALL run_sql_if_column_exists('sys_config', 'updated_by', 'UPDATE sys_config SET update_id = updated_by WHERE update_id = 0 AND updated_by IS NOT NULL');
+
+CALL run_sql_if_column_exists('sys_user', 'created_at', 'UPDATE sys_user SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_user', 'updated_at', 'UPDATE sys_user SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_role', 'created_at', 'UPDATE sys_role SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_permission', 'created_at', 'UPDATE sys_permission SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_refresh_token', 'created_at', 'UPDATE sys_refresh_token SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_menu', 'created_at', 'UPDATE sys_menu SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_menu', 'updated_at', 'UPDATE sys_menu SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document', 'created_at', 'UPDATE exam_document SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document', 'updated_at', 'UPDATE exam_document SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document_analysis', 'created_at', 'UPDATE exam_document_analysis SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document_analysis', 'updated_at', 'UPDATE exam_document_analysis SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document_analysis_chunk', 'created_at', 'UPDATE exam_document_analysis_chunk SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_document_analysis_chunk', 'updated_at', 'UPDATE exam_document_analysis_chunk SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_category', 'created_at', 'UPDATE exam_question_category SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_category', 'updated_at', 'UPDATE exam_question_category SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_bank', 'created_at', 'UPDATE exam_question_bank SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_bank', 'updated_at', 'UPDATE exam_question_bank SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_tag', 'created_at', 'UPDATE exam_question_tag SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_tag', 'updated_at', 'UPDATE exam_question_tag SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_tag_relation', 'created_at', 'UPDATE exam_question_tag_relation SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('exam_question_source', 'created_at', 'UPDATE exam_question_source SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_config', 'created_at', 'UPDATE sys_config SET create_time = created_at WHERE created_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_config', 'updated_at', 'UPDATE sys_config SET update_time = updated_at WHERE updated_at IS NOT NULL');
+CALL run_sql_if_column_exists('sys_notification', 'created_at', 'UPDATE sys_notification SET create_time = created_at WHERE created_at IS NOT NULL');
+
+DROP PROCEDURE IF EXISTS run_sql_if_column_exists;
 
 SET @sql = IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND INDEX_NAME = 'uk_sys_user_username') > 0, 'ALTER TABLE sys_user DROP INDEX uk_sys_user_username', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

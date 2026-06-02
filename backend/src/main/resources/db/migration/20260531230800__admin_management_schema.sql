@@ -1,3 +1,6 @@
+-- 初始化后台管理扩展字段、菜单表和管理权限。
+-- 依赖字段仅作为普通字段或索引使用，不建立数据库外键或级联约束。
+
 SET @sql = IF(
     (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'force_password_change') = 0,
@@ -20,6 +23,11 @@ DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS sys_menu (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    create_id BIGINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_id BIGINT NOT NULL DEFAULT 0,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted BIGINT NOT NULL DEFAULT 0,
     parent_id BIGINT NULL,
     menu_name VARCHAR(64) NOT NULL,
     path VARCHAR(128) NOT NULL,
@@ -28,8 +36,7 @@ CREATE TABLE IF NOT EXISTS sys_menu (
     sort_order INT NOT NULL DEFAULT 0,
     status TINYINT NOT NULL DEFAULT 1,
     permission_code VARCHAR(128) NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_sys_menu_path (path, deleted),
     KEY idx_sys_menu_parent_sort (parent_id, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -65,8 +72,11 @@ JOIN sys_permission p ON p.permission_code IN (
     'session:kick', 'password:change'
 )
 WHERE r.role_code = 'ADMIN'
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_role_permission (role_id, permission_id)
@@ -74,42 +84,45 @@ SELECT r.id, p.id
 FROM sys_role r
 JOIN sys_permission p ON p.permission_code = 'password:change'
 WHERE r.role_code IN ('TEACHER', 'STUDENT')
+  AND r.deleted = 0
+  AND p.deleted = 0
   AND NOT EXISTS (
-      SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
+      SELECT 1 FROM sys_role_permission rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id AND rp.deleted = 0
   );
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '我的文档', '/documents', 'DocumentsPage', 'Document', 10, 1, 'document:list'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/documents');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/documents' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '我的题库', '/questions', 'QuestionsPage', 'Collection', 20, 1, 'question:list'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/questions');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/questions' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '用户管理', '/admin/users', 'AdminUsersPage', 'User', 30, 1, 'admin:user:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/users');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/users' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '角色管理', '/admin/roles', 'AdminRolesPage', 'UserFilled', 40, 1, 'admin:role:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/roles');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/roles' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '权限管理', '/admin/permissions', 'AdminPermissionsPage', 'Key', 50, 1, 'admin:permission:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/permissions');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/permissions' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '菜单管理', '/admin/menus', 'AdminMenusPage', 'Menu', 60, 1, 'admin:menu:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/menus');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/menus' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '系统配置', '/system-configs', 'SystemConfigPage', 'Setting', 70, 1, 'system-config:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/system-configs');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/system-configs' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '站内通知', '/notifications', 'NotificationsPage', 'Bell', 80, 1, 'notification:page'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/notifications');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/notifications' AND deleted = 0);
 
 INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
 SELECT '用户详情', '/profile', 'ProfilePage', 'User', 90, 1, NULL
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/profile');
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/profile' AND deleted = 0);
