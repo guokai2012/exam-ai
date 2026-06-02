@@ -18,12 +18,19 @@
         </div>
       </div>
       <el-table :data="users" border>
-        <el-table-column label="操作" width="320" fixed="left">
+        <el-table-column label="操作" width="230" fixed="left">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="kick(row)">踢下线</el-button>
-            <el-button link type="warning" @click="openReset(row)">重置密码</el-button>
-            <el-button link type="danger" @click="disable(row)">禁用</el-button>
+            <el-dropdown @command="command => handleMoreCommand(command, row)">
+              <el-button link type="primary">更多</el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="reset">重置密码</el-dropdown-item>
+                  <el-dropdown-item command="disable">禁用</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
         <el-table-column prop="id" label="ID" width="80" />
@@ -109,7 +116,25 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElPagination, ElSelect, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import {
+  ElButton,
+  ElCard,
+  ElDialog,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage,
+  ElMessageBox,
+  ElOption,
+  ElPagination,
+  ElSelect,
+  ElTable,
+  ElTableColumn,
+  ElTag
+} from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { createUser, disableUser, kickUser, listUsers, resetPassword, updateUser } from './api'
 import { listRoles } from '../admin-roles/api'
@@ -251,6 +276,22 @@ async function kick(row) {
     ElMessage.success('已踢下线')
   } catch (error) {
     ElMessage.error(error.message || '踢下线失败')
+  }
+}
+
+/**
+ * 处理用户行更多操作，下拉菜单用于收纳第三个及之后的低频按钮。
+ *
+ * @param {string} command 操作命令。
+ * @param {Object} row 当前用户行。
+ */
+function handleMoreCommand(command, row) {
+  if (command === 'reset') {
+    openReset(row)
+    return
+  }
+  if (command === 'disable') {
+    disable(row)
   }
 }
 
