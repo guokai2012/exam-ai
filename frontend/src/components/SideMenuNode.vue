@@ -11,7 +11,7 @@
     </template>
     <SideMenuNode v-for="child in menu.children" :key="child.path || child.id" :menu="child" />
   </el-sub-menu>
-  <el-menu-item v-else :index="menu.path">
+  <el-menu-item v-else-if="menu.path" :index="menu.path">
     <el-icon><component :is="iconComponent(menu.icon)" /></el-icon>
     <span>{{ menu.menuName }}</span>
   </el-menu-item>

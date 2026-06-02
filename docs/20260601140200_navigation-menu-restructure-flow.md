@@ -6,7 +6,7 @@
 
 ## 参与角色
 
-- 管理员：访问系统管理下的用户、角色、权限、菜单和系统配置入口。
+- 管理员：访问系统管理下的用户、角色、权限、菜单和系统配置入口，并维护菜单展示字段。
 - 老师：访问题库管理下的可用题和待确认题入口，并确认或驳回解析题目。
 - 无权限用户：只能看到自己拥有权限的菜单，不能看到空分组。
 
@@ -14,7 +14,8 @@
 
 1. 用户登录后，前端调用 `GET /api/menus/me` 加载当前用户菜单树。
 2. 后端按当前用户权限过滤菜单，并移除没有可见子菜单的分组。
-3. 前端侧边栏按 `children` 渲染一级分组和子菜单。
+3. `path = NULL` 的菜单作为分组只展开不跳转，叶子菜单按非空 `path` 跳转。
+4. 前端侧边栏按 `children` 渲染一级分组和子菜单。
 4. 管理员展开“系统管理”，进入系统类管理页面。
 5. 老师展开“题库管理”，进入“待确认题”处理 `PARSE_PENDING_CONFIRM` 题目。
 6. 老师确认通过后，题目进入后续标签流程，最终成为 `AVAILABLE` 并在“可用题”展示。
@@ -48,7 +49,8 @@ flowchart TD
 ## 前后端交互点
 
 - 菜单树：`GET /api/menus/me` 返回当前用户可见菜单树。
-- 菜单管理：`GET/POST/PUT/DELETE /api/admin/menus` 维护完整菜单树。
+- 菜单管理：`GET /api/admin/menus` 查询完整菜单树，`PUT /api/admin/menus/{id}` 只维护菜单名称、图标、排序、状态和叶子菜单 `api_path`。
+- API 路径选项：`GET /api/admin/menus/api-path-options` 扫描 Controller 根路径，供菜单绑定页面主资源 API。
 - 可用题：`GET /api/questions?state=AVAILABLE`。
 - 待确认题：`GET /api/questions?state=PARSE_PENDING_CONFIRM`。
 - 审核题目：`POST /api/questions/{id}/review`。

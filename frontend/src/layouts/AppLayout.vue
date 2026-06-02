@@ -76,6 +76,7 @@ import { myMenus } from '../modules/admin-menus/api'
 import { clearAuthTokens, getRefreshToken } from '../shared/authToken'
 import { applyTheme, getTheme, setTheme, themeLabel } from '../modules/settings/themeSettings'
 import { roleSummary } from '../shared/formatters'
+import { setMenuApiPathSource } from '../shared/menuApiPath'
 import SideMenuNode from '../components/SideMenuNode.vue'
 
 const route = useRoute()
@@ -97,17 +98,17 @@ async function loadCurrentUser() {
 }
 
 const fallbackMenus = [
-  { menuName: '我的文档', path: '/documents', icon: 'Document' },
+  { menuName: '我的文档', path: '/documents', apiPath: '/api/documents', icon: 'Document' },
   {
     menuName: '题库管理',
-    path: '/question-management',
+    path: null,
     icon: 'Collection',
     children: [
-      { menuName: '可用题', path: '/questions/available', icon: 'Collection' },
-      { menuName: '待确认题', path: '/questions/pending-confirm', icon: 'EditPen' }
+      { menuName: '可用题', path: '/questions/available', apiPath: '/api/questions', icon: 'Collection' },
+      { menuName: '待确认题', path: '/questions/pending-confirm', apiPath: '/api/questions', icon: 'EditPen' }
     ]
   },
-  { menuName: '站内通知', path: '/notifications', icon: 'Bell' },
+  { menuName: '站内通知', path: '/notifications', apiPath: '/api/notifications', icon: 'Bell' },
   { menuName: '用户详情', path: '/profile', icon: 'User' }
 ]
 
@@ -130,6 +131,8 @@ async function loadMenus() {
   } catch {
     menus.value = fallbackMenus
   }
+  // 页面 API 模块优先读取当前菜单绑定的 apiPath，未配置时再使用模块默认值。
+  setMenuApiPathSource(visibleMenus.value)
 }
 
 async function handleSettingCommand(command) {

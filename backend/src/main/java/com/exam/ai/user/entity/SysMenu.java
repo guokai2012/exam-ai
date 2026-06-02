@@ -18,7 +18,7 @@ public class SysMenu extends BaseEntity {
     private Long parentId;
     private String menuName;
     private String path;
-    private String component;
+    private String apiPath;
     private String icon;
     private Integer sortOrder;
     private Integer status;

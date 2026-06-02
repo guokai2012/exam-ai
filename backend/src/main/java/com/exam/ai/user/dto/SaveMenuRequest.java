@@ -13,22 +13,16 @@ import jakarta.validation.constraints.Size;
 @Schema(description = "保存菜单请求")
 @Builder
 public record SaveMenuRequest(
-        @Schema(description = "父菜单 ID，根菜单为空")
-        Long parentId,
         @Schema(description = "菜单名称")
         @NotBlank @Size(max = 64) String menuName,
-        @Schema(description = "前端路由路径")
-        @NotBlank @Size(max = 128) String path,
-        @Schema(description = "前端组件标识")
-        @NotBlank @Size(max = 128) String component,
         @Schema(description = "图标名称")
         @Size(max = 64) String icon,
         @Schema(description = "排序值")
         @NotNull Integer sortOrder,
         @Schema(description = "状态：1 启用，0 禁用")
         @NotNull Integer status,
-        @Schema(description = "访问菜单所需权限码，必须绑定 Controller 扫描生成的动作权限；无权限限制时可留空")
-        @Size(max = 128) String permissionCode
+        @Schema(description = "页面主资源 API 根路径；分组菜单必须为空")
+        @Size(max = 128) String apiPath
 ) {
 }
 

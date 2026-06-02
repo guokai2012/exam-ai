@@ -1,12 +1,21 @@
 import { api } from '../../api/http'
 import { PAGE_DEFAULTS } from '../../shared/constants'
+import { resolveMenuApiPath } from '../../shared/menuApiPath'
+
+const QUESTION_PAGE_PATHS = ['/questions/available', '/questions/pending-confirm']
+const QUESTION_DEFAULT_API = '/api/questions'
+const QUESTION_CATEGORY_API = '/api/question-categories'
+
+function questionApiPath() {
+  return resolveMenuApiPath(QUESTION_PAGE_PATHS, QUESTION_DEFAULT_API)
+}
 
 export function listCategories() {
-  return api.get('/api/question-categories')
+  return api.get(QUESTION_CATEGORY_API)
 }
 
 export function createCategory(payload) {
-  return api.post('/api/question-categories', payload)
+  return api.post(QUESTION_CATEGORY_API, payload)
 }
 
 export function listQuestions(filters = {}) {
@@ -26,13 +35,13 @@ export function listQuestions(filters = {}) {
   if (filters.tagId) {
     params.set('tagId', filters.tagId)
   }
-  return api.get(`/api/questions?${params.toString()}`)
+  return api.get(`${questionApiPath()}?${params.toString()}`)
 }
 
 export function getQuestion(id) {
-  return api.get(`/api/questions/${id}`)
+  return api.get(`${questionApiPath()}/${id}`)
 }
 
 export function reviewQuestion(id, payload) {
-  return api.post(`/api/questions/${id}/review`, payload)
+  return api.post(`${questionApiPath()}/${id}/review`, payload)
 }

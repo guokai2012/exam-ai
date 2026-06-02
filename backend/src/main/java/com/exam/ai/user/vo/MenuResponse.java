@@ -19,8 +19,8 @@ public record MenuResponse(
         String menuName,
         @Schema(description = "前端路由路径")
         String path,
-        @Schema(description = "前端组件标识")
-        String component,
+        @Schema(description = "页面主资源 API 根路径")
+        String apiPath,
         @Schema(description = "图标名称")
         String icon,
         @Schema(description = "排序值")

@@ -8,49 +8,65 @@
     <el-card shadow="never">
       <div class="toolbar compact-toolbar">
         <div><p class="eyebrow">Admin Menus</p><h2>菜单管理</h2></div>
-        <el-button type="primary" @click="openCreate()">新建菜单</el-button>
       </div>
       <el-table :data="menus" row-key="id" border default-expand-all>
-        <el-table-column prop="menuName" label="菜单名称" />
-        <el-table-column prop="path" label="路径" />
-        <el-table-column prop="component" label="组件标识" />
-        <el-table-column prop="permissionCode" label="权限码" />
+        <el-table-column prop="menuName" label="菜单名称" min-width="160" />
+        <el-table-column label="页面路径" min-width="180">
+          <template #default="{ row }">
+            <el-tag v-if="!row.path" type="info">分组</el-tag>
+            <span v-else>{{ row.path }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="API 路径" min-width="220">
+          <template #default="{ row }">{{ row.apiPath || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="permissionCode" label="权限码" min-width="180" />
+        <el-table-column prop="icon" label="图标" width="120" />
         <el-table-column prop="sortOrder" label="排序" width="90" />
         <el-table-column label="状态" width="90">
-          <template #default="{ row }">{{ row.status === 1 ? '启用' : '禁用' }}</template>
+          <template #default="{ row }">{{ row.status === USER_STATUS.enabled ? '启用' : '禁用' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="90">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openCreate(row)">新增子菜单</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
-    <el-dialog v-model="visible" :title="form.id ? '编辑菜单' : '新建菜单'" width="620px">
+    <el-dialog v-model="visible" title="编辑菜单" width="620px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
-        <el-form-item label="父级 ID"><el-input v-model="form.parentId" placeholder="根菜单留空" /></el-form-item>
-        <el-form-item label="菜单名称" prop="menuName"><el-input v-model="form.menuName" /></el-form-item>
-        <el-form-item label="路径" prop="path"><el-input v-model="form.path" /></el-form-item>
-        <el-form-item label="组件标识" prop="component">
-          <el-select v-model="form.component" filterable placeholder="选择已存在的前端组件">
-            <el-option v-for="option in componentOptions" :key="option.value" :label="option.label" :value="option.value" />
+        <el-form-item label="页面路径">
+          <el-input :model-value="form.path || '分组'" disabled />
+        </el-form-item>
+        <el-form-item label="菜单名称" prop="menuName">
+          <el-input v-model="form.menuName" />
+        </el-form-item>
+        <el-form-item label="图标">
+          <el-input v-model="form.icon" />
+        </el-form-item>
+        <el-form-item label="排序" prop="sortOrder">
+          <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="form.status">
+            <el-option label="启用" :value="USER_STATUS.enabled" />
+            <el-option label="禁用" :value="USER_STATUS.disabled" />
           </el-select>
         </el-form-item>
-        <el-form-item label="图标"><el-input v-model="form.icon" /></el-form-item>
-        <el-form-item label="权限码"><el-input v-model="form.permissionCode" placeholder="无权限限制可留空" /></el-form-item>
-        <el-form-item label="排序"><el-input v-model.number="form.sortOrder" /></el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+        <el-form-item v-if="form.path" label="API 路径">
+          <el-select v-model="form.apiPath" filterable clearable placeholder="选择 Controller API 根路径">
+            <el-option
+              v-for="option in apiPathOptions"
+              :key="option.value"
+              :label="`${option.label}：${option.value}`"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
   </section>
@@ -58,21 +74,39 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElButton, ElCard, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElTable, ElTableColumn } from 'element-plus'
-import { createMenu, deleteMenu, listMenus, updateMenu } from './api'
-import { MENU_COMPONENT_OPTIONS, USER_STATUS } from '../../shared/constants'
+import {
+  ElButton,
+  ElCard,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElInputNumber,
+  ElMessage,
+  ElOption,
+  ElSelect,
+  ElTable,
+  ElTableColumn,
+  ElTag
+} from 'element-plus'
+import { listApiPathOptions, listMenus, updateMenu } from './api'
+import { USER_STATUS } from '../../shared/constants'
 
 const menus = ref([])
+const apiPathOptions = ref([])
 const visible = ref(false)
+const saving = ref(false)
 const formRef = ref(null)
-const form = reactive({ id: null, parentId: '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: USER_STATUS.enabled })
-const componentOptions = MENU_COMPONENT_OPTIONS
+const form = reactive({ id: null, menuName: '', path: null, apiPath: null, icon: '', sortOrder: 0, status: USER_STATUS.enabled })
 const formRules = {
   menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
-  path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
-  component: [{ required: true, message: '请输入组件标识', trigger: 'blur' }]
+  sortOrder: [{ required: true, message: '请输入排序值', trigger: 'change' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
+/**
+ * 加载后台完整菜单树，管理员只能在该树上编辑有限展示字段。
+ */
 async function load() {
   try {
     menus.value = await listMenus()
@@ -82,63 +116,60 @@ async function load() {
 }
 
 /**
- * 打开新建菜单弹窗，新增子菜单时自动带入父菜单 ID。
+ * 加载可绑定 API 根路径，选项由后端扫描 Controller 映射和 @Tag 名称生成。
  */
-function openCreate(parent) {
-  Object.assign(form, { id: null, parentId: parent?.id || '', menuName: '', path: '', component: '', icon: '', permissionCode: '', sortOrder: 0, status: USER_STATUS.enabled })
-  visible.value = true
+async function loadApiPathOptions() {
+  try {
+    apiPathOptions.value = await listApiPathOptions()
+  } catch (error) {
+    ElMessage.error(error.message || 'API 路径选项加载失败')
+  }
 }
 
 /**
- * 打开编辑菜单弹窗，将表格行复制为表单草稿，避免直接修改列表数据。
+ * 打开编辑弹窗，将表格行复制为表单草稿，避免直接污染菜单树数据。
+ *
+ * @param {Object} row 当前编辑的菜单行。
  */
 function openEdit(row) {
-  Object.assign(form, { ...row, parentId: row.parentId || '', permissionCode: row.permissionCode || '', icon: row.icon || '' })
+  Object.assign(form, {
+    id: row.id,
+    menuName: row.menuName,
+    path: row.path || null,
+    apiPath: row.path ? row.apiPath || null : null,
+    icon: row.icon || '',
+    sortOrder: Number(row.sortOrder || 0),
+    status: row.status
+  })
   visible.value = true
 }
 
 /**
- * 保存菜单前校验组件标识必须来自当前前端已实现页面，避免生成不可访问菜单。
+ * 保存菜单展示字段；分组菜单强制清空 apiPath，防止分组被当作页面发起请求。
  */
 async function save() {
   await formRef.value?.validate()
-  if (!componentOptions.some(option => option.value === form.component)) {
-    ElMessage.error('请选择当前前端已存在的组件标识')
-    return
-  }
+  saving.value = true
   try {
     const payload = {
-      parentId: form.parentId ? Number(form.parentId) : null,
       menuName: form.menuName,
-      path: form.path,
-      component: form.component,
-      icon: form.icon,
-      permissionCode: form.permissionCode || null,
+      icon: form.icon || null,
       sortOrder: Number(form.sortOrder || 0),
-      status: form.status
+      status: form.status,
+      apiPath: form.path ? form.apiPath || null : null
     }
-    if (form.id) await updateMenu(form.id, payload)
-    else await createMenu(payload)
+    await updateMenu(form.id, payload)
     ElMessage.success('菜单已保存')
     visible.value = false
     await load()
   } catch (error) {
     ElMessage.error(error.message || '菜单保存失败')
+  } finally {
+    saving.value = false
   }
 }
 
-/**
- * 删除菜单前进行二次确认，后端会继续校验是否存在子菜单。
- */
-async function remove(row) {
-  try {
-    await ElMessageBox.confirm(`确认删除菜单 ${row.menuName}？`, '确认操作')
-    await deleteMenu(row.id)
-    ElMessage.success('菜单已删除')
-    await load()
-  } catch (error) {
-    if (error !== 'cancel') ElMessage.error(error.message || '菜单删除失败')
-  }
-}
-onMounted(load)
+onMounted(async () => {
+  await Promise.all([load(), loadApiPathOptions()])
+})
 </script>

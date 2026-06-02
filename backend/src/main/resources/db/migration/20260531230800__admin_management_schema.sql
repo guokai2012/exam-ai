@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS sys_menu (
     deleted BIGINT NOT NULL DEFAULT 0,
     parent_id BIGINT NULL,
     menu_name VARCHAR(64) NOT NULL,
-    path VARCHAR(128) NOT NULL,
-    component VARCHAR(128) NOT NULL,
+    path VARCHAR(128) NULL,
+    api_path VARCHAR(128) NULL,
     icon VARCHAR(64) NULL,
     sort_order INT NOT NULL DEFAULT 0,
     status TINYINT NOT NULL DEFAULT 1,
@@ -66,41 +66,62 @@ CALL add_column_if_missing_admin('sys_menu', 'create_time', 'ALTER TABLE sys_men
 CALL add_column_if_missing_admin('sys_menu', 'update_id', 'ALTER TABLE sys_menu ADD COLUMN update_id BIGINT NOT NULL DEFAULT 0 AFTER create_time');
 CALL add_column_if_missing_admin('sys_menu', 'update_time', 'ALTER TABLE sys_menu ADD COLUMN update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER update_id');
 CALL add_column_if_missing_admin('sys_menu', 'deleted', 'ALTER TABLE sys_menu ADD COLUMN deleted BIGINT NOT NULL DEFAULT 0 AFTER update_time');
+CALL add_column_if_missing_admin('sys_menu', 'api_path', 'ALTER TABLE sys_menu ADD COLUMN api_path VARCHAR(128) NULL AFTER path');
 
 DROP PROCEDURE IF EXISTS add_column_if_missing_admin;
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '我的文档', '/documents', 'DocumentsPage', 'Document', 10, 1, 'document:list'
+SET @sql = IF(
+    (SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_menu' AND COLUMN_NAME = 'path') = 'NO',
+    'ALTER TABLE sys_menu MODIFY COLUMN path VARCHAR(128) NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_menu' AND COLUMN_NAME = 'component') > 0,
+    'ALTER TABLE sys_menu DROP COLUMN component',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '我的文档', '/documents', '/api/documents', 'Document', 10, 1, 'document:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/documents' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '我的题库', '/questions', 'QuestionsPage', 'Collection', 20, 1, 'question:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '我的题库', '/questions', '/api/questions', 'Collection', 20, 1, 'question:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/questions' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '用户管理', '/admin/users', 'AdminUsersPage', 'User', 30, 1, 'admin:user:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '用户管理', '/admin/users', '/api/admin/users', 'User', 30, 1, 'admin:user:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/users' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '角色管理', '/admin/roles', 'AdminRolesPage', 'UserFilled', 40, 1, 'admin:role:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '角色管理', '/admin/roles', '/api/admin/roles', 'UserFilled', 40, 1, 'admin:role:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/roles' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '权限管理', '/admin/permissions', 'AdminPermissionsPage', 'Key', 50, 1, 'admin:permission:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '权限管理', '/admin/permissions', '/api/admin/permissions', 'Key', 50, 1, 'admin:permission:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/permissions' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '菜单管理', '/admin/menus', 'AdminMenusPage', 'Menu', 60, 1, 'admin:menu:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '菜单管理', '/admin/menus', '/api/admin/menus', 'Menu', 60, 1, 'admin:menu:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/admin/menus' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '系统配置', '/system-configs', 'SystemConfigPage', 'Setting', 70, 1, 'system-config:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '系统配置', '/system-configs', '/api/system-configs', 'Setting', 70, 1, 'system-config:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/system-configs' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '站内通知', '/notifications', 'NotificationsPage', 'Bell', 80, 1, 'notification:list'
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '站内通知', '/notifications', '/api/notifications', 'Bell', 80, 1, 'notification:list'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/notifications' AND deleted = 0);
 
-INSERT INTO sys_menu (menu_name, path, component, icon, sort_order, status, permission_code)
-SELECT '用户详情', '/profile', 'ProfilePage', 'User', 90, 1, NULL
+INSERT INTO sys_menu (menu_name, path, api_path, icon, sort_order, status, permission_code)
+SELECT '用户详情', '/profile', NULL, 'User', 90, 1, NULL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/profile' AND deleted = 0);
