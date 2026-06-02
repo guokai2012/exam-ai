@@ -1,5 +1,62 @@
 -- 统一 BaseEntity 公共字段与逻辑删除字段；所有语句均带存在性判断，支持重复执行。
 
+DROP PROCEDURE IF EXISTS drop_foreign_keys_touching;
+
+DELIMITER $$
+CREATE PROCEDURE drop_foreign_keys_touching(IN target_table_param VARCHAR(64))
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE fk_table_name VARCHAR(64);
+    DECLARE fk_constraint_name VARCHAR(64);
+    DECLARE fk_cursor CURSOR FOR
+        SELECT DISTINCT kcu.TABLE_NAME, kcu.CONSTRAINT_NAME
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+        WHERE kcu.TABLE_SCHEMA = DATABASE()
+          AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+          AND (
+              kcu.TABLE_NAME = target_table_param
+              OR kcu.REFERENCED_TABLE_NAME = target_table_param
+          );
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN fk_cursor;
+    drop_loop: LOOP
+        FETCH fk_cursor INTO fk_table_name, fk_constraint_name;
+        IF done THEN
+            LEAVE drop_loop;
+        END IF;
+        SET @sql = CONCAT(
+            'ALTER TABLE `', REPLACE(fk_table_name, '`', '``'),
+            '` DROP FOREIGN KEY `', REPLACE(fk_constraint_name, '`', '``'), '`'
+        );
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END LOOP;
+    CLOSE fk_cursor;
+END$$
+DELIMITER ;
+
+CALL drop_foreign_keys_touching('sys_user');
+CALL drop_foreign_keys_touching('sys_role');
+CALL drop_foreign_keys_touching('sys_permission');
+CALL drop_foreign_keys_touching('sys_user_role');
+CALL drop_foreign_keys_touching('sys_role_permission');
+CALL drop_foreign_keys_touching('sys_refresh_token');
+CALL drop_foreign_keys_touching('sys_menu');
+CALL drop_foreign_keys_touching('exam_document');
+CALL drop_foreign_keys_touching('exam_document_analysis');
+CALL drop_foreign_keys_touching('exam_document_analysis_chunk');
+CALL drop_foreign_keys_touching('exam_question_category');
+CALL drop_foreign_keys_touching('exam_question_bank');
+CALL drop_foreign_keys_touching('exam_question_tag');
+CALL drop_foreign_keys_touching('exam_question_tag_relation');
+CALL drop_foreign_keys_touching('exam_question_source');
+CALL drop_foreign_keys_touching('sys_config');
+CALL drop_foreign_keys_touching('sys_notification');
+
+DROP PROCEDURE IF EXISTS drop_foreign_keys_touching;
+
 SET @sql = IF(
     (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user_role' AND COLUMN_NAME = 'id') = 0,
     'ALTER TABLE sys_user_role DROP PRIMARY KEY',
