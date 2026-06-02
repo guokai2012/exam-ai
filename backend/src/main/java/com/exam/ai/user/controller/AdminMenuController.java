@@ -1,10 +1,10 @@
 package com.exam.ai.user.controller;
 
 import com.exam.ai.common.result.ApiResponse;
-import com.exam.ai.user.vo.ApiPathOptionResponse;
-import com.exam.ai.user.vo.MenuResponse;
 import com.exam.ai.user.dto.SaveMenuRequest;
 import com.exam.ai.user.service.MenuService;
+import com.exam.ai.user.vo.ApiPathOptionResponse;
+import com.exam.ai.user.vo.MenuResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,11 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AdminMenuController 类，当前分层的业务组件，负责本模块对应的请求、服务或数据模型职责。
+ * 后台菜单管理 Controller，负责管理员维护菜单树、查询 API 路径候选项和删除菜单节点。
  */
 @RestController
-@RequestMapping("/api")
-@Tag(name = "后台菜单管理接口", description = "管理员维护菜单树，登录用户加载可见菜单")
+@RequestMapping("/api/admin/menus")
+@Tag(name = "后台菜单管理接口", description = "管理员维护菜单树")
 public class AdminMenuController {
 
     private final MenuService menuService;
@@ -40,22 +40,11 @@ public class AdminMenuController {
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
-     */
-    @GetMapping("/menus/me")
-    @Operation(summary = "当前用户菜单树", description = "按当前用户权限返回可见菜单树。")
-    public ApiResponse<List<MenuResponse>> currentUserMenus() {
-        return ApiResponse.ok(menuService.currentUserMenus());
-    }
-
-    /**
      * 查询业务数据集合，并按调用场景组织返回结构。
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @GetMapping("/admin/menus")
+    @GetMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:list')")
     @Operation(summary = "后台菜单树", description = "查询完整后台菜单树。")
     public ApiResponse<List<MenuResponse>> list() {
@@ -68,7 +57,7 @@ public class AdminMenuController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @GetMapping("/admin/menus/api-path-options")
+    @GetMapping("/api-path-options")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:update')")
     @Operation(summary = "菜单 API 路径选项", description = "扫描 Controller 的 API 根路径和接口标签，供菜单绑定页面主资源路径。")
     public ApiResponse<List<ApiPathOptionResponse>> apiPathOptions() {
@@ -82,7 +71,7 @@ public class AdminMenuController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当父菜单不存在、path 重复或分组字段非法时抛出。
      */
-    @PostMapping("/admin/menus")
+    @PostMapping
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:create')")
     @Operation(summary = "新建菜单", description = "创建菜单节点；path 为空表示分组菜单，分组菜单不能设置 API 路径。")
     public ApiResponse<MenuResponse> create(@Valid @RequestBody SaveMenuRequest request) {
@@ -96,7 +85,7 @@ public class AdminMenuController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
      */
-    @PutMapping("/admin/menus/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:update')")
     @Operation(summary = "编辑菜单", description = "只允许更新菜单名称、图标、排序、状态和页面主资源 API 路径。")
     public ApiResponse<MenuResponse> update(@Parameter(description = "菜单 ID") @PathVariable Long id, @Valid @RequestBody SaveMenuRequest request) {
@@ -110,7 +99,7 @@ public class AdminMenuController {
      * @return 封装后的业务处理结果。
      * @throws com.exam.ai.common.exception.BusinessException 当菜单不存在或仍存在子菜单时抛出。
      */
-    @DeleteMapping("/admin/menus/{id}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') and hasAuthority('admin:menu:delete')")
     @Operation(summary = "删除菜单", description = "删除没有子菜单的菜单；存在子节点时拒绝删除。")
     public ApiResponse<Void> delete(@Parameter(description = "菜单 ID") @PathVariable Long id) {
