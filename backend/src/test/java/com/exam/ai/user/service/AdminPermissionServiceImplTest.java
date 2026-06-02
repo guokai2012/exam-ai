@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -112,14 +113,7 @@ class AdminPermissionServiceImplTest {
                 eq(NotificationService.BUSINESS_PERMISSION_SCAN),
                 eq(null)
         );
-        verify(notificationService).createForRole(
-                eq("ADMIN"),
-                eq("权限扫描发现重复权限码"),
-                org.mockito.ArgumentMatchers.contains("重复一/重复二"),
-                eq(NotificationService.TYPE_PERMISSION_SCAN_WARNING),
-                eq(NotificationService.BUSINESS_PERMISSION_SCAN),
-                eq(null)
-        );
+        verifyNoMoreInteractions(notificationService);
     }
 
     /**

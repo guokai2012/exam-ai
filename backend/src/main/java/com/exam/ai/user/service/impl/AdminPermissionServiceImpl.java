@@ -41,7 +41,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 /**
  * 后台权限管理服务实现，负责从 Controller 权限表达式扫描并全量同步权限数据。
  *
- * <p>权限表的业务权限只允许由扫描生成。扫描过程中发现缺少接口摘要或权限码重复时，
+ * <p>权限表的业务权限只允许由扫描生成。扫描过程中发现缺少接口摘要时，
  * 不阻断同步流程，而是通过站内通知提醒管理员修正 Controller 注解。</p>
  */
 @Service
@@ -55,7 +55,6 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
     private static final String FALLBACK_GROUP_CODE = "__controller:uncategorized";
     private static final String FALLBACK_GROUP_NAME = "未归类接口";
     private static final String MISSING_SUMMARY_TITLE = "权限扫描缺少接口摘要";
-    private static final String DUPLICATE_CODE_TITLE = "权限扫描发现重复权限码";
     private static final String NAME_SEPARATOR = "/";
     private static final String ENDPOINT_SEPARATOR = "，";
     private static final int PERMISSION_NAME_MAX_LENGTH = 512;
@@ -208,7 +207,6 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
         Map<String, ScannedGroup> groups = new LinkedHashMap<>();
         Map<String, ScannedPermission> permissions = new LinkedHashMap<>();
         List<String> missingSummaries = new ArrayList<>();
-        List<String> duplicateCodes = new ArrayList<>();
         Map<String, String> groupNamesByApiPath = menuGroupNamesByApiPath();
         List<Map.Entry<RequestMappingInfo, HandlerMethod>> endpoints = handlerMapping.getHandlerMethods().entrySet().stream()
                 .sorted(Comparator.comparing(entry -> endpointKey(entry.getKey(), entry.getValue())))
@@ -244,11 +242,10 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
                 }
                 permission.addDisplayName(displayName);
                 permission.addEndpoint(endpointDescription);
-                duplicateCodes.add(authorityCode + " -> " + permission.displayName() + " -> " + permission.endpoints());
             }
         }
 
-        return new ScanResult(groups, permissions, missingSummaries, duplicateCodes);
+        return new ScanResult(groups, permissions, missingSummaries);
     }
 
     /**
@@ -368,16 +365,6 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
                     ADMIN_ROLE_CODE,
                     MISSING_SUMMARY_TITLE,
                     String.join(System.lineSeparator(), scanResult.missingSummaries()),
-                    NotificationService.TYPE_PERMISSION_SCAN_WARNING,
-                    NotificationService.BUSINESS_PERMISSION_SCAN,
-                    null
-            );
-        }
-        if (!scanResult.duplicateCodes().isEmpty()) {
-            notificationService.createForRole(
-                    ADMIN_ROLE_CODE,
-                    DUPLICATE_CODE_TITLE,
-                    String.join(System.lineSeparator(), scanResult.duplicateCodes()),
                     NotificationService.TYPE_PERMISSION_SCAN_WARNING,
                     NotificationService.BUSINESS_PERMISSION_SCAN,
                     null
@@ -663,13 +650,11 @@ public class AdminPermissionServiceImpl implements AdminPermissionService {
      * @param groups 扫描生成的 Controller 分组。
      * @param permissions 扫描生成的动作权限。
      * @param missingSummaries 缺少 Operation summary 的告警。
-     * @param duplicateCodes 重复权限码告警。
      */
     private record ScanResult(
             Map<String, ScannedGroup> groups,
             Map<String, ScannedPermission> permissions,
-            List<String> missingSummaries,
-            List<String> duplicateCodes
+            List<String> missingSummaries
     ) {
     }
 
