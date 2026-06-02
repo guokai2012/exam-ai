@@ -14,14 +14,14 @@
         </div>
       </div>
       <el-table :data="menus" row-key="id" border default-expand-all>
-        <el-table-column label="操作" width="210" fixed="left">
+        <el-table-column label="操作" width="160" fixed="left">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openCreate(row)">新增子菜单</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-dropdown @command="command => handleMoreCommand(command, row)">
               <el-button link type="primary">更多</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="create">新增子菜单</el-dropdown-item>
                   <el-dropdown-item command="delete">删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -267,12 +267,16 @@ async function remove(row) {
 }
 
 /**
- * 处理操作列下拉菜单命令，直排按钮之外的低频操作统一收纳到这里。
+ * 处理操作列下拉菜单命令，确保操作列可见控件总数不超过 2 个。
  *
  * @param {string} command 操作命令。
  * @param {Object} row 当前菜单行。
  */
 function handleMoreCommand(command, row) {
+  if (command === 'create') {
+    openCreate(row)
+    return
+  }
   if (command === 'delete') {
     remove(row)
   }

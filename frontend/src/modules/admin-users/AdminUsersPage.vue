@@ -18,14 +18,14 @@
         </div>
       </div>
       <el-table :data="users" border>
-        <el-table-column label="操作" width="230" fixed="left">
+        <el-table-column label="操作" width="160" fixed="left">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" @click="kick(row)">踢下线</el-button>
             <el-dropdown @command="command => handleMoreCommand(command, row)">
               <el-button link type="primary">更多</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="kick">踢下线</el-dropdown-item>
                   <el-dropdown-item command="reset">重置密码</el-dropdown-item>
                   <el-dropdown-item command="disable">禁用</el-dropdown-item>
                 </el-dropdown-menu>
@@ -280,12 +280,16 @@ async function kick(row) {
 }
 
 /**
- * 处理用户行更多操作，下拉菜单用于收纳第三个及之后的低频按钮。
+ * 处理用户行更多操作，确保操作列可见控件总数不超过 2 个。
  *
  * @param {string} command 操作命令。
  * @param {Object} row 当前用户行。
  */
 function handleMoreCommand(command, row) {
+  if (command === 'kick') {
+    kick(row)
+    return
+  }
   if (command === 'reset') {
     openReset(row)
     return
