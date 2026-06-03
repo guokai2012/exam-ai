@@ -10,6 +10,7 @@ const LoginPage = () => import('../modules/auth/LoginPage.vue')
 const RegisterPage = () => import('../modules/auth/RegisterPage.vue')
 const ChangePasswordPage = () => import('../modules/change-password/ChangePasswordPage.vue')
 const DocumentsPage = () => import('../modules/documents/DocumentsPage.vue')
+const HomePage = () => import('../modules/home/HomePage.vue')
 const NotificationsPage = () => import('../modules/notifications/NotificationsPage.vue')
 const ProfilePage = () => import('../modules/profile/ProfilePage.vue')
 const AvailableQuestionsPage = () => import('../modules/questions/AvailableQuestionsPage.vue')
@@ -36,8 +37,21 @@ export const appRoutes = [
     {
       path: '/',
       component: AppLayout,
-      redirect: '/documents',
+      redirect: '/home',
       children: [
+        {
+          path: 'home',
+          component: HomePage,
+          meta: {
+            title: '首页',
+            eyebrow: 'Home',
+            menu: true,
+            menuKey: 'menu:/home',
+            menuName: '首页',
+            icon: 'House',
+            sortOrder: 10
+          }
+        },
         {
           path: 'documents',
           component: DocumentsPage,
@@ -48,7 +62,7 @@ export const appRoutes = [
             menuKey: 'menu:/documents',
             menuName: '我的文档',
             icon: 'Document',
-            sortOrder: 10,
+            sortOrder: 20,
             apiPath: '/api/documents',
             permissionCode: 'document:list'
           }
@@ -63,7 +77,7 @@ export const appRoutes = [
             menuKey: 'group:/questions',
             menuName: '题库管理',
             icon: 'Collection',
-            sortOrder: 20
+            sortOrder: 30
           }
         },
         {
@@ -108,7 +122,7 @@ export const appRoutes = [
             menuKey: 'group:/admin',
             menuName: '后台管理',
             icon: 'Setting',
-            sortOrder: 30
+            sortOrder: 40
           }
         },
         {
@@ -185,7 +199,7 @@ export const appRoutes = [
             menuKey: 'menu:/system-configs',
             menuName: '系统配置',
             icon: 'Setting',
-            sortOrder: 40,
+            sortOrder: 50,
             apiPath: '/api/system-configs',
             permissionCode: 'system-config:list'
           }
@@ -200,7 +214,7 @@ export const appRoutes = [
             menuKey: 'menu:/notifications',
             menuName: '站内通知',
             icon: 'Bell',
-            sortOrder: 50,
+            sortOrder: 60,
             apiPath: '/api/notifications',
             permissionCode: 'notification:list'
           }
@@ -215,7 +229,7 @@ export const appRoutes = [
             menuKey: 'menu:/profile',
             menuName: '用户详情',
             icon: 'User',
-            sortOrder: 60
+            sortOrder: 70
           }
         }
       ]
@@ -229,7 +243,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   if (to.meta.public && isAuthenticated()) {
-    return '/documents'
+    return '/home'
   }
   if (!to.meta.public && !isAuthenticated()) {
     return { path: '/login', query: { redirect: to.fullPath } }

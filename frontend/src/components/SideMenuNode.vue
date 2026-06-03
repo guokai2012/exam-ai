@@ -20,7 +20,7 @@
 <script setup>
 import { computed } from 'vue'
 import { ElIcon, ElMenuItem, ElSubMenu } from 'element-plus'
-import { Bell, Collection, Document, EditPen, Key, Menu, Setting, User, UserFilled } from '@element-plus/icons-vue'
+import { Bell, Collection, Document, EditPen, House, Key, Menu, Setting, User, UserFilled } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'SideMenuNode' })
 
@@ -32,7 +32,7 @@ const props = defineProps({
 })
 
 const hasChildren = computed(() => Array.isArray(props.menu.children) && props.menu.children.length > 0)
-const iconMap = { Bell, Collection, Document, EditPen, Key, Menu, Setting, User, UserFilled }
+const iconMap = { Bell, Collection, Document, EditPen, House, Key, Menu, Setting, User, UserFilled }
 
 function iconComponent(icon) {
   return iconMap[icon] || Document

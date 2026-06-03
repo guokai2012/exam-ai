@@ -98,6 +98,7 @@ async function loadCurrentUser() {
 }
 
 const fallbackMenus = [
+  { menuName: '首页', path: '/home', icon: 'House' },
   { menuName: '我的文档', path: '/documents', apiPath: '/api/documents', icon: 'Document' },
   {
     menuName: '题库管理',

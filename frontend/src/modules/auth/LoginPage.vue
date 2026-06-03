@@ -91,7 +91,7 @@ async function submitLogin() {
     setAuthTokens(result)
     ElMessage.success('登录成功')
     const me = await currentUser()
-    await router.replace(me?.forcePasswordChange ? '/change-password' : route.query.redirect || '/documents')
+    await router.replace(me?.forcePasswordChange ? '/change-password' : route.query.redirect || '/home')
   } catch (error) {
     statusText.value = error.message || '登录失败'
     await loadCaptcha()
