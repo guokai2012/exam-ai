@@ -40,7 +40,7 @@
         <el-empty v-if="documents.length === 0" description="暂无我的文档" />
         <el-pagination
           class="table-pagination"
-          small
+          size="small"
           background
           layout="prev, pager, next"
           :current-page="pagination.page"
