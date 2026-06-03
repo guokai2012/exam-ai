@@ -150,18 +150,25 @@ class MenuServiceImplTest {
     }
 
     /**
-     * 验证扫描同步只补齐空白开发字段，不覆盖管理员维护的展示字段。
+     * 验证扫描同步会覆盖已有菜单字段，并删除扫描结果中不存在的旧菜单。
      */
     @Test
-    void syncScannedMenusFillsMissingFieldsWithoutOverwritingAdminFields() {
+    void syncScannedMenusOverwritesExistingFieldsAndDeletesStaleMenus() {
         SysMenuMapper menuMapper = mock(SysMenuMapper.class);
         Map<Long, SysMenu> store = new LinkedHashMap<>();
         SysMenu existing = menu(1L, "管理员改名", "/documents", null, null, "CustomIcon", 99, 0);
+        SysMenu stale = menu(2L, "旧菜单", "/legacy", "/api/legacy", "legacy:list", "Menu", 100, 1);
         store.put(existing.getId(), existing);
+        store.put(stale.getId(), stale);
         when(menuMapper.selectList(ArgumentMatchers.<Wrapper<SysMenu>>any())).thenAnswer(invocation -> List.copyOf(store.values()));
         when(menuMapper.updateById(any(SysMenu.class))).thenAnswer(invocation -> {
             SysMenu menu = invocation.getArgument(0);
             store.put(menu.getId(), menu);
+            return 1;
+        });
+        when(menuMapper.deleteById(ArgumentMatchers.anyLong())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            store.remove(id);
             return 1;
         });
         MenuServiceImpl service = new MenuServiceImpl(menuMapper, handlerMapping);
@@ -179,13 +186,15 @@ class MenuServiceImplTest {
         ))));
 
         assertThat(response.updated()).isEqualTo(1);
-        assertThat(existing.getMenuName()).isEqualTo("管理员改名");
-        assertThat(existing.getIcon()).isEqualTo("CustomIcon");
-        assertThat(existing.getSortOrder()).isEqualTo(99);
-        assertThat(existing.getStatus()).isZero();
+        assertThat(response.deleted()).isEqualTo(1);
+        assertThat(existing.getMenuName()).isEqualTo("我的文档");
+        assertThat(existing.getIcon()).isEqualTo("Document");
+        assertThat(existing.getSortOrder()).isEqualTo(10);
+        assertThat(existing.getStatus()).isEqualTo(1);
         assertThat(existing.getMenuKey()).isEqualTo("menu:/documents");
         assertThat(existing.getApiPath()).isEqualTo("/api/documents");
         assertThat(existing.getPermissionCode()).isEqualTo("document:list");
+        assertThat(store).doesNotContainKey(stale.getId());
     }
 
     /**
@@ -228,6 +237,7 @@ class MenuServiceImplTest {
         ))));
 
         assertThat(response.created()).isEqualTo(2);
+        assertThat(response.deleted()).isZero();
         SysMenu group = store.get(1L);
         SysMenu child = store.get(2L);
         assertThat(group.getPath()).isNull();

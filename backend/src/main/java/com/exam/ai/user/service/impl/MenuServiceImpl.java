@@ -155,10 +155,10 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
-     * 同步前端扫描得到的菜单树，只创建缺失菜单或补齐空白开发字段。
+     * 同步前端扫描得到的菜单树，扫描结果作为权威菜单数据全量覆盖数据库。
      *
      * @param request 前端扫描得到的菜单树。
-     * @return 本次同步新增、更新和跳过数量。
+     * @return 本次同步新增、更新和删除数量。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -170,7 +170,8 @@ public class MenuServiceImpl implements MenuService {
         for (SyncMenuItemRequest item : request.menus()) {
             syncMenuItem(item, null, context);
         }
-        return new MenuSyncResponse(context.created, context.updated, context.skipped);
+        deleteStaleMenus(existingMenus, context);
+        return new MenuSyncResponse(context.created, context.updated, context.deleted);
     }
 
     /**
@@ -236,13 +237,13 @@ public class MenuServiceImpl implements MenuService {
             menuMapper.insert(menu);
             context.created++;
             context.remember(menu);
-        } else if (fillMissingScannedFields(menu, item, parentId, group)) {
+        } else {
+            overwriteScannedFields(menu, item, parentId, group);
             menuMapper.updateById(menu);
             context.updated++;
             context.remember(menu);
-        } else {
-            context.skipped++;
         }
+        context.syncedMenuIds.add(menu.getId());
 
         for (SyncMenuItemRequest child : item.children() == null ? List.<SyncMenuItemRequest>of() : item.children()) {
             syncMenuItem(child, menu.getId(), context);
@@ -293,49 +294,40 @@ public class MenuServiceImpl implements MenuService {
     }
 
     /**
-     * 只补齐扫描菜单对应记录的空白开发字段，并保护管理员维护过的展示字段。
+     * 使用扫描菜单覆盖数据库已有记录，保证前端路由元数据是菜单表的权威来源。
      *
      * @param menu 已存在菜单。
      * @param item 扫描菜单节点。
      * @param parentId 父菜单 ID。
      * @param group 是否分组菜单。
-     * @return 有字段被补齐或清理时返回 true。
      */
-    private boolean fillMissingScannedFields(SysMenu menu, SyncMenuItemRequest item, Long parentId, boolean group) {
-        boolean changed = false;
-        if (!StringUtils.hasText(menu.getMenuKey())) {
-            menu.setMenuKey(normalizeBlank(item.menuKey()));
-            changed = true;
-        }
-        if (menu.getParentId() == null && parentId != null) {
-            menu.setParentId(parentId);
-            changed = true;
-        }
-        if (!group && !StringUtils.hasText(menu.getPath())) {
-            menu.setPath(normalizeBlank(item.path()));
-            changed = true;
-        }
-        if (group) {
-            // 分组菜单不能绑定页面 API 或动作权限，扫描同步时也要强制修正。
-            if (StringUtils.hasText(menu.getApiPath())) {
-                menu.setApiPath(null);
-                changed = true;
+    private void overwriteScannedFields(SysMenu menu, SyncMenuItemRequest item, Long parentId, boolean group) {
+        menu.setParentId(parentId);
+        menu.setMenuKey(normalizeBlank(item.menuKey()));
+        menu.setMenuName(item.menuName().trim());
+        menu.setPath(group ? null : normalizeBlank(item.path()));
+        // 分组菜单不能绑定页面 API 或动作权限，全量覆盖时也强制清空。
+        menu.setApiPath(group ? null : normalizeBlank(item.apiPath()));
+        menu.setIcon(normalizeBlank(item.icon()));
+        menu.setSortOrder(item.sortOrder());
+        menu.setStatus(item.status() == null ? DEFAULT_STATUS : item.status());
+        menu.setPermissionCode(group ? null : normalizeBlank(item.permissionCode()));
+    }
+
+    /**
+     * 删除本次扫描结果中不存在的旧菜单，保证数据库菜单集合与前端路由扫描结果一致。
+     *
+     * @param existingMenus 扫描前数据库中的菜单。
+     * @param context 本次同步上下文，包含已同步菜单 ID。
+     */
+    private void deleteStaleMenus(List<SysMenu> existingMenus, MenuSyncContext context) {
+        for (SysMenu existingMenu : existingMenus) {
+            if (context.syncedMenuIds.contains(existingMenu.getId())) {
+                continue;
             }
-            if (StringUtils.hasText(menu.getPermissionCode())) {
-                menu.setPermissionCode(null);
-                changed = true;
-            }
-            return changed;
+            menuMapper.deleteById(existingMenu.getId());
+            context.deleted++;
         }
-        if (!StringUtils.hasText(menu.getApiPath()) && StringUtils.hasText(item.apiPath())) {
-            menu.setApiPath(normalizeBlank(item.apiPath()));
-            changed = true;
-        }
-        if (!StringUtils.hasText(menu.getPermissionCode()) && StringUtils.hasText(item.permissionCode())) {
-            menu.setPermissionCode(normalizeBlank(item.permissionCode()));
-            changed = true;
-        }
-        return changed;
     }
 
     /**
@@ -551,9 +543,10 @@ public class MenuServiceImpl implements MenuService {
         private final Map<String, SysMenu> byMenuKey = new LinkedHashMap<>();
         private final Map<String, SysMenu> byPath = new LinkedHashMap<>();
         private final Map<String, SysMenu> byGroupFallback = new LinkedHashMap<>();
+        private final Set<Long> syncedMenuIds = new LinkedHashSet<>();
         private int created;
         private int updated;
-        private int skipped;
+        private int deleted;
 
         /**
          * 创建同步上下文并索引已有菜单。

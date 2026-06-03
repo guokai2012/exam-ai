@@ -287,12 +287,12 @@ function handleMoreCommand(command, row) {
  */
 async function handleScanMenus() {
   try {
-    await ElMessageBox.confirm('扫描会补齐前端路由中声明但菜单表缺失的数据，不会删除已有菜单。确认继续？', '扫描菜单')
+    await ElMessageBox.confirm('扫描会以当前前端路由菜单数据覆盖菜单表，并删除本次未扫描到的旧菜单。确认继续？', '扫描菜单')
     scanning.value = true
     const tokenResponse = await requestMenuScanToken()
     const payload = scanRouterMenus()
     const result = await syncScannedMenus(payload, tokenResponse.token)
-    ElMessage.success(`菜单扫描完成，新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`)
+    ElMessage.success(`菜单扫描完成，新增 ${result.created}，更新 ${result.updated}，删除 ${result.deleted}`)
     await load()
   } catch (error) {
     if (error !== 'cancel') {

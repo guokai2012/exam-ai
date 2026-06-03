@@ -52,10 +52,10 @@ public interface MenuService {
     public List<ApiPathOptionResponse> listApiPathOptions();
 
     /**
-     * 同步前端扫描得到的菜单树，只补齐缺失菜单和空白开发字段。
+     * 同步前端扫描得到的菜单树，以扫描结果全量覆盖数据库菜单数据。
      *
      * @param request 前端扫描得到的菜单树。
-     * @return 本次同步新增、更新和跳过数量。
+     * @return 本次同步新增、更新和删除数量。
      * @throws com.exam.ai.common.exception.BusinessException 当菜单结构非法或分组字段非法时抛出。
      */
     public MenuSyncResponse syncScannedMenus(SyncMenuRequest request);
