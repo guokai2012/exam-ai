@@ -3,7 +3,9 @@ server:
 
 logging:
   level:
-    root: info
+    root: INFO
+  threshold:
+    console: INFO
 
 spring:
   application:
