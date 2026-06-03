@@ -21,7 +21,7 @@ export function setMenuApiPathSource(menus) {
 export function resolveMenuApiPath(pagePaths, fallbackApiPath) {
   const candidates = normalizeCandidates(pagePaths)
   const currentPath = window.location?.pathname
-  const orderedPaths = currentPath ? [currentPath, ...candidates] : candidates
+  const orderedPaths = prioritizeCurrentCandidate(candidates, currentPath)
   const menus = flattenMenus(menuTree.value)
   const matched = orderedPaths
     .map(path => menus.find(menu => menu.path === path && menu.apiPath))
@@ -49,4 +49,20 @@ function flattenMenus(menus) {
  */
 function normalizeCandidates(pagePaths) {
   return Array.isArray(pagePaths) ? pagePaths : [pagePaths]
+}
+
+/**
+ * 仅当当前路由属于调用方声明的候选页面时才提升优先级。
+ *
+ * @param {string[]} candidates API 模块声明的页面路径候选。
+ * @param {string} currentPath 当前浏览器页面路径。
+ * @returns {string[]} 去重后的查询顺序。
+ */
+function prioritizeCurrentCandidate(candidates, currentPath) {
+  if (!currentPath || !candidates.includes(currentPath)) {
+    return candidates
+  }
+
+  // API 模块可能被其他页面复用，不能用非候选当前路由覆盖模块自己的 apiPath。
+  return [currentPath, ...candidates.filter(path => path !== currentPath)]
 }
