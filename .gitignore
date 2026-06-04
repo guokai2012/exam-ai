@@ -9,3 +9,4 @@ frontend/.vite/
 *.iml
 *.log
 .DS_Store
+.env
