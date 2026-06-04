@@ -130,7 +130,6 @@ public class DocumentServiceImpl implements DocumentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DocumentResponse upload(MultipartFile file) {
-        Long currentUserId = CurrentUserUtils.currentUserId();
         DocumentFileService.StoredDocument stored = fileService.store(file);
         // 文件服务已完成类型、大小、落盘和文本提取校验，这里只负责业务元数据入库。
         ExamDocument document = new ExamDocument();
@@ -142,7 +141,6 @@ public class DocumentServiceImpl implements DocumentService {
         document.setStoragePath(stored.storagePath());
         document.setExtractedText(stored.extractedText());
         document.setStatus(DocumentStatus.UPLOADED);
-        document.setUploadedBy(currentUserId);
         documentMapper.insert(document);
         return toDocumentResponse(documentMapper.selectById(document.getId()), null);
     }
@@ -157,7 +155,7 @@ public class DocumentServiceImpl implements DocumentService {
      */
     public IPage<DocumentResponse> list(long page, long size) {
         LambdaQueryWrapper<ExamDocument> query = new LambdaQueryWrapper<ExamDocument>()
-                .eq(ExamDocument::getUploadedBy, CurrentUserUtils.currentUserId())
+                .eq(ExamDocument::getCreateId, CurrentUserUtils.currentUserId())
                 .orderByDesc(ExamDocument::getId);
         return documentMapper.selectPage(Page.of(page, size), query)
                 .convert(document -> toDocumentResponse(document, latestSummary(document.getId())));
@@ -462,7 +460,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (document == null) {
             throw BusinessException.badRequest("文档不存在");
         }
-        if (!document.getUploadedBy().equals(CurrentUserUtils.currentUserId())) {
+        if (!document.getCreateId().equals(CurrentUserUtils.currentUserId())) {
             throw BusinessException.forbidden();
         }
         return document;
@@ -525,7 +523,7 @@ public class DocumentServiceImpl implements DocumentService {
                 document.getFileSize(),
                 document.getSha256(),
                 document.getStatus(),
-                document.getUploadedBy(),
+                document.getCreateId(),
                 document.getCreateTime(),
                 latestAnalysis
         );

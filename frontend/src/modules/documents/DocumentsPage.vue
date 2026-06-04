@@ -69,7 +69,7 @@
           </div>
           <el-descriptions class="detail-descriptions" :column="2" border>
             <el-descriptions-item label="文档 ID">{{ activeDocument.id }}</el-descriptions-item>
-            <el-descriptions-item label="上传人">{{ activeDocument.uploadedBy }}</el-descriptions-item>
+            <el-descriptions-item label="上传人">{{ activeDocument.createId }}</el-descriptions-item>
             <el-descriptions-item label="文件类型">{{ activeDocument.fileType }}</el-descriptions-item>
             <el-descriptions-item label="文件大小">{{ formatSize(activeDocument.fileSize) }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ activeDocument.createdAt || '-' }}</el-descriptions-item>

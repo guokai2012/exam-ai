@@ -23,6 +23,5 @@ public class ExamDocument extends BaseEntity {
     private String storagePath;
     private String extractedText;
     private String status;
-    private Long uploadedBy;
 }
 

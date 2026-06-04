@@ -23,8 +23,8 @@ public record DocumentResponse(
         String sha256,
         @Schema(description = "文档状态")
         String status,
-        @Schema(description = "上传人用户 ID")
-        Long uploadedBy,
+        @Schema(description = "创建人用户 ID，文档场景下即上传人用户 ID")
+        Long createId,
         @Schema(description = "创建时间")
         LocalDateTime createdAt,
         @Schema(description = "最新分析摘要")
