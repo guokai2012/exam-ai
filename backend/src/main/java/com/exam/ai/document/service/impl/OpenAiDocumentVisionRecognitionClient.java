@@ -2,12 +2,14 @@ package com.exam.ai.document.service.impl;
 
 import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.document.service.DocumentVisionRecognitionClient;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -109,7 +111,7 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
                 )),
                 "max_tokens", DEFAULT_MAX_COMPLETION_TOKENS,
                 "temperature", DEFAULT_TEMPERATURE,
-                "extra_body", extraBody(),
+                "thinking", Map.of("type", "disabled"),
                 "response_format", responseFormat()
         );
         try {
