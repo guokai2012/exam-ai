@@ -18,18 +18,16 @@ public class ExamDocumentAnalysisChunk extends BaseEntity {
 
     private Long analysisId;
     private Long documentId;
-    private Integer chunkIndex;
-    private String chunkText;
-    private String chunkHash;
-    private Integer startOffset;
-    private Integer endOffset;
-    private Integer questionCountEstimate;
-    private Boolean oversized;
+    private Integer pageNo;
+    private String pageImagePath;
+    private Integer pageWidth;
+    private Integer pageHeight;
     private String status;
     private Integer retryCount;
     private String rawJson;
     private String errorMessage;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
+    private LocalDateTime notifiedAt;
 }
 

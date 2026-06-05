@@ -280,6 +280,29 @@ h2 {
   background: #f8fafc;
 }
 
+.render-progress-panel {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.render-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--app-text);
+  font-size: 13px;
+}
+
+.render-progress-meta span {
+  color: var(--app-muted);
+}
+
 pre {
   max-height: 220px;
   overflow: auto;

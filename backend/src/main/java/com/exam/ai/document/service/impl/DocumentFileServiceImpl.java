@@ -5,7 +5,6 @@ import com.exam.ai.common.exception.BusinessException;
 import com.exam.ai.document.service.DocumentFileService;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -16,7 +15,6 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,10 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class DocumentFileServiceImpl implements DocumentFileService {
 
-    private static final Set<String> ALLOWED_TYPES = Set.of("md", "pdf", "doc", "docx");
+    private static final Set<String> ALLOWED_TYPES = Set.of("pdf");
 
     private final DocumentProperties properties;
-    private final Tika tika = new Tika();
 
     /**
      * 构造 DocumentFileServiceImpl 实例并注入运行所需依赖。
@@ -61,10 +58,9 @@ public class DocumentFileServiceImpl implements DocumentFileService {
             Files.createDirectories(storageRoot);
             file.transferTo(target);
             String sha256 = sha256(target);
-            String extractedText = extractText(target, fileType);
-            return new StoredDocument(originalFilename, storedFilename, fileType, file.getSize(), sha256, target.toString(), extractedText);
+            return new StoredDocument(originalFilename, storedFilename, fileType, file.getSize(), sha256, target.toString());
         } catch (IOException ex) {
-            throw BusinessException.badRequest("文件保存或解析失败");
+            throw BusinessException.badRequest("PDF 文件保存失败");
         }
     }
 
@@ -84,7 +80,7 @@ public class DocumentFileServiceImpl implements DocumentFileService {
         String filename = sanitizeFilename(file.getOriginalFilename());
         String ext = extension(filename);
         if (!ALLOWED_TYPES.contains(ext)) {
-            throw BusinessException.badRequest("仅支持 md、pdf、doc、docx 文件");
+            throw BusinessException.badRequest("仅支持 PDF 文件");
         }
     }
 
@@ -122,25 +118,6 @@ public class DocumentFileServiceImpl implements DocumentFileService {
             throw BusinessException.badRequest("文件缺少扩展名");
         }
         return filename.substring(dot + 1).toLowerCase(Locale.ROOT);
-    }
-
-    /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param path 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param fileType 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
-     */
-    @Override
-    public String extractText(Path path, String fileType) {
-        try {
-            if ("md".equals(fileType)) {
-                return Files.readString(path, StandardCharsets.UTF_8);
-            }
-            return tika.parseToString(path);
-        } catch (Exception ex) {
-            throw BusinessException.badRequest("文档内容提取失败");
-        }
     }
 
     /**

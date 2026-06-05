@@ -23,8 +23,8 @@ spring:
       timeout: 3s
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 20MB
+      max-file-size: 40MB
+      max-request-size: 40MB
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -54,7 +54,7 @@ app:
     scan-initial-delay: 60000
   document:
     storage-path: storage/documents
-    max-size: 20MB
+    max-size: 40MB
   ai:
     max-input-chars: 12000
   security:

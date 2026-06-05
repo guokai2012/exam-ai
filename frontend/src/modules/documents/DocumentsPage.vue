@@ -67,11 +67,23 @@
               {{ analyzeButtonText(activeDocument.status) }}
             </el-button>
           </div>
+          <div v-if="showRenderProgress(activeDocument)" class="render-progress-panel">
+            <div class="render-progress-meta">
+              <strong>{{ renderProgressTitle(activeDocument) }}</strong>
+              <span>{{ renderPageLabel(activeDocument) }}</span>
+            </div>
+            <el-progress
+              :percentage="renderProgressPercentage(activeDocument)"
+              :status="renderProgressStatus(activeDocument)"
+            />
+          </div>
           <el-descriptions class="detail-descriptions" :column="2" border>
             <el-descriptions-item label="文档 ID">{{ activeDocument.id }}</el-descriptions-item>
             <el-descriptions-item label="上传人">{{ activeDocument.createId }}</el-descriptions-item>
             <el-descriptions-item label="文件类型">{{ activeDocument.fileType }}</el-descriptions-item>
             <el-descriptions-item label="文件大小">{{ formatSize(activeDocument.fileSize) }}</el-descriptions-item>
+            <el-descriptions-item label="总页数">{{ activeDocument.pageCount || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="已分片页数">{{ renderedPageCount(activeDocument) }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ activeDocument.createdAt || '-' }}</el-descriptions-item>
             <el-descriptions-item label="最新分析">
               {{ activeDocument.latestAnalysis?.status ? stateLabel(activeDocument.latestAnalysis.status) : '-' }}
@@ -94,14 +106,14 @@
               <el-tag type="success">成功 {{ analysis.chunkProgress.success }}</el-tag>
               <el-tag type="danger">失败 {{ analysis.chunkProgress.failed }}</el-tag>
               <el-tag type="info">待处理 {{ analysis.chunkProgress.pending }}</el-tag>
-              <el-tag v-if="analysis.chunkProgress.oversized" type="warning">
-                超长 {{ analysis.chunkProgress.oversized }}
+              <el-tag v-if="analysis.chunkProgress.processing" type="warning">
+                处理中 {{ analysis.chunkProgress.processing }}
               </el-tag>
             </div>
             <el-alert
-              v-if="analysis.chunkProgress?.oversized && analysis.chunkProgress?.failed"
+              v-if="analysis.chunkProgress?.latestErrorMessage"
               class="inline-alert"
-              title="存在超长失败块，建议人工拆分原文后重新上传。"
+              :title="analysis.chunkProgress.latestErrorMessage"
               type="warning"
               :closable="false"
             />
@@ -130,7 +142,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import {
   ElAlert,
   ElButton,
@@ -142,6 +154,7 @@ import {
   ElEmpty,
   ElMessage,
   ElPagination,
+  ElProgress,
   ElRate,
   ElTag,
   ElUpload
@@ -159,6 +172,8 @@ const activeDocument = ref(null)
 const analysis = ref(null)
 const contentPreview = ref('')
 const pagination = ref({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.documentSize, total: 0 })
+const RENDER_POLL_INTERVAL = 3000
+let renderPollingTimer = null
 
 function selectFile(uploadFile) {
   selectedFile.value = uploadFile.raw || null
@@ -172,6 +187,8 @@ async function loadDocuments() {
     const result = await fetchDocuments(pagination.value.page, pagination.value.size)
     documents.value = result?.records || []
     pagination.value.total = Number(result?.total || 0)
+    syncActiveDocumentFromList()
+    scheduleRenderPolling()
   } catch (error) {
     ElMessage.error(error.message || '文档列表加载失败')
   }
@@ -190,6 +207,7 @@ async function submitUpload() {
     selectedFile.value = null
     ElMessage.success('上传成功')
     await loadDocuments()
+    scheduleRenderPolling()
   } catch (error) {
     ElMessage.error(error.message || '上传失败')
   } finally {
@@ -205,10 +223,16 @@ async function selectDocument(doc) {
   contentPreview.value = ''
   try {
     activeDocument.value = await getDocumentDetail(doc.id)
-    analysis.value = await latestAnalysis(doc.id)
+    try {
+      analysis.value = await latestAnalysis(doc.id)
+    } catch {
+      analysis.value = null
+    }
+    scheduleRenderPolling()
   } catch {
     analysis.value = null
     activeDocument.value = doc
+    scheduleRenderPolling()
   }
 }
 
@@ -243,14 +267,106 @@ async function startAnalyze() {
   try {
     analysis.value = await analyzeDocument(activeDocument.value.id)
     ElMessage.success('分析完成')
+    activeDocument.value = await getDocumentDetail(activeDocument.value.id)
     await loadDocuments()
   } catch (error) {
     ElMessage.error(error.message || '分析失败')
   } finally {
     analyzing.value = false
+    scheduleRenderPolling()
   }
 }
 
+/**
+ * 当前文档处于页图片生成阶段时，启用 3 秒轮询以刷新真实页级进度。
+ */
+function scheduleRenderPolling() {
+  stopRenderPolling()
+  if (!isRenderPollingStatus(activeDocument.value?.status)) return
+  renderPollingTimer = window.setInterval(refreshActiveDocumentProgress, RENDER_POLL_INTERVAL)
+}
+
+/**
+ * 清理页图片分片进度轮询，避免组件卸载或状态结束后继续请求。
+ */
+function stopRenderPolling() {
+  if (!renderPollingTimer) return
+  window.clearInterval(renderPollingTimer)
+  renderPollingTimer = null
+}
+
+/**
+ * 刷新当前文档详情和列表状态，确保进度条页数与后端最新分片保持一致。
+ */
+async function refreshActiveDocumentProgress() {
+  if (!activeDocument.value) {
+    stopRenderPolling()
+    return
+  }
+  try {
+    activeDocument.value = await getDocumentDetail(activeDocument.value.id)
+    await loadDocuments()
+    if (!isRenderPollingStatus(activeDocument.value.status)) {
+      stopRenderPolling()
+    }
+  } catch (error) {
+    stopRenderPolling()
+    ElMessage.error(error.message || '文档分片进度刷新失败')
+  }
+}
+
+/**
+ * 文档列表刷新后同步当前详情的轻量状态字段，让左侧和右侧状态保持一致。
+ */
+function syncActiveDocumentFromList() {
+  if (!activeDocument.value) return
+  const latestDocument = documents.value.find((doc) => doc.id === activeDocument.value.id)
+  if (!latestDocument) return
+  activeDocument.value = { ...activeDocument.value, ...latestDocument }
+}
+
+function isRenderPollingStatus(status) {
+  return ['UPLOADED', 'PAGE_RENDERING'].includes(status)
+}
+
+function showRenderProgress(doc) {
+  return ['UPLOADED', 'PAGE_RENDERING', 'PAGE_READY', 'PAGE_RENDER_FAILED'].includes(doc?.status)
+}
+
+function renderedPageCount(doc) {
+  if (!doc) return 0
+  const total = Number(doc.pageCount || 0)
+  if (doc.status === 'PAGE_READY') return total
+  return Number(doc.renderedPageCount || 0)
+}
+
+function renderPageLabel(doc) {
+  const total = Number(doc?.pageCount || 0)
+  return `${renderedPageCount(doc)} / ${total || '-'} 页`
+}
+
+function renderProgressPercentage(doc) {
+  if (doc?.status === 'PAGE_READY') return 100
+  const percent = Number(doc?.renderProgressPercent || 0)
+  return Math.min(100, Math.max(0, percent))
+}
+
+function renderProgressStatus(doc) {
+  if (doc?.status === 'PAGE_READY') return 'success'
+  if (doc?.status === 'PAGE_RENDER_FAILED') return 'exception'
+  return undefined
+}
+
+function renderProgressTitle(doc) {
+  return {
+    UPLOADED: '等待后端开始分片',
+    PAGE_RENDERING: '文档分片中，请稍候',
+    PAGE_READY: '分片完成，可以发起 AI 解析',
+    PAGE_RENDER_FAILED: '文档分片失败，请重新上传或联系管理员'
+  }[doc?.status] || '文档分片进度'
+}
+
 onMounted(loadDocuments)
+onUnmounted(stopRenderPolling)
 </script>
 

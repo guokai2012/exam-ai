@@ -16,7 +16,6 @@ public interface DocumentFileService {
      * @param fileSize 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @param sha256 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @param storagePath 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param extractedText 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @return 封装后的业务处理结果。
      */
     public record StoredDocument(
@@ -25,8 +24,7 @@ public interface DocumentFileService {
             String fileType,
             Long fileSize,
             String sha256,
-            String storagePath,
-            String extractedText
+            String storagePath
     ) {
     }
 
@@ -37,8 +35,6 @@ public interface DocumentFileService {
     String sanitizeFilename(String filename);
 
     String extension(String filename);
-
-    String extractText(Path path, String fileType);
 
     String sha256(Path path);
 }

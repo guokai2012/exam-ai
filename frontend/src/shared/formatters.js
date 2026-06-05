@@ -23,7 +23,13 @@ export function stateLabel(status) {
     TAG_FAILED: '标签失败',
     AVAILABLE: '可用',
     UPLOADED: '已上传',
+    PAGE_RENDERING: '文档分片中',
+    PAGE_READY: '分片完成',
+    PAGE_RENDER_FAILED: '分片失败',
     PARSING: '解析中',
+    AI_PARSE_FAILED_REVIEW: '解析失败待处理',
+    AI_PARSE_COMPLETE: 'AI 页解析完成',
+    RAW_JSON_PROCESSING: '解析结果处理中',
     PARSE_PARTIAL_FAILED: '部分解析失败',
     PARSE_FAILED: '解析失败',
     PENDING_CONFIRMATION: '待确认解析结果',
@@ -44,9 +50,9 @@ export function roleSummary(roles = []) {
 }
 
 export function canAnalyzeDocument(status) {
-  return ['UPLOADED', 'PARSE_FAILED', 'PARSE_PARTIAL_FAILED'].includes(status)
+  return ['PAGE_READY', 'AI_PARSE_FAILED_REVIEW'].includes(status)
 }
 
 export function analyzeButtonText(status) {
-  return ['PARSE_FAILED', 'PARSE_PARTIAL_FAILED'].includes(status) ? '继续解析' : 'AI 解析'
+  return status === 'AI_PARSE_FAILED_REVIEW' ? '继续解析' : 'AI 解析'
 }

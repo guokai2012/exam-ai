@@ -22,8 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationServiceImpl implements NotificationService {
 
     public static final String TYPE_AI_TAGGING_FAILED = "AI_TAGGING_FAILED";
+    public static final String TYPE_AI_DOCUMENT_ANALYSIS_FAILED = "AI_DOCUMENT_ANALYSIS_FAILED";
+    public static final String TYPE_AI_DOCUMENT_RENDER_FAILED = "AI_DOCUMENT_RENDER_FAILED";
     public static final String TYPE_PERMISSION_SCAN_WARNING = "PERMISSION_SCAN_WARNING";
     public static final String BUSINESS_QUESTION = "QUESTION";
+    public static final String BUSINESS_DOCUMENT = "DOCUMENT";
     public static final String BUSINESS_PERMISSION_SCAN = "PERMISSION_SCAN";
 
     private final SysNotificationMapper notificationMapper;

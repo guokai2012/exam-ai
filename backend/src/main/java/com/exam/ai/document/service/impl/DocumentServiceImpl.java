@@ -1,68 +1,80 @@
 package com.exam.ai.document.service.impl;
 
-import com.exam.ai.document.service.DocumentService;
-import com.exam.ai.document.service.DocumentFileService;
-import com.exam.ai.document.util.DocumentChunker;
-import com.exam.ai.document.util.QuestionAnalysisParser;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.exam.ai.common.config.DocumentProperties;
 import com.exam.ai.common.exception.BusinessException;
-import com.exam.ai.common.config.AiAnalysisProperties;
+import com.exam.ai.document.dto.AiQuestionItem;
+import com.exam.ai.document.dto.AiQuestionResult;
+import com.exam.ai.document.dto.RetryFailedPagesRequest;
 import com.exam.ai.document.entity.AnalysisChunkStatus;
 import com.exam.ai.document.entity.AnalysisStatus;
 import com.exam.ai.document.entity.DocumentStatus;
 import com.exam.ai.document.entity.ExamDocument;
 import com.exam.ai.document.entity.ExamDocumentAnalysis;
 import com.exam.ai.document.entity.ExamDocumentAnalysisChunk;
-import com.exam.ai.document.dto.AiQuestionItem;
-import com.exam.ai.document.dto.AiQuestionResult;
-import com.exam.ai.document.vo.AnalysisResponse;
-import com.exam.ai.document.vo.AnalysisSummary;
-import com.exam.ai.document.vo.ChunkProgressResponse;
-import com.exam.ai.document.vo.DocumentContentResponse;
-import com.exam.ai.document.vo.DocumentResponse;
-import com.exam.ai.document.vo.QuestionAnalysisResponse;
 import com.exam.ai.document.mapper.ExamDocumentAnalysisChunkMapper;
 import com.exam.ai.document.mapper.ExamDocumentAnalysisMapper;
 import com.exam.ai.document.mapper.ExamDocumentMapper;
-import com.exam.ai.question.entity.ExamQuestionSource;
+import com.exam.ai.document.service.DocumentFileService;
+import com.exam.ai.document.service.DocumentService;
+import com.exam.ai.document.service.DocumentVisionRecognitionClient;
+import com.exam.ai.document.util.QuestionAnalysisParser;
+import com.exam.ai.document.vo.AnalysisResponse;
+import com.exam.ai.document.vo.AnalysisSummary;
+import com.exam.ai.document.vo.ChunkProgressResponse;
+import com.exam.ai.document.vo.DocumentResponse;
+import com.exam.ai.document.vo.FailedPageResponse;
+import com.exam.ai.document.vo.QuestionAnalysisResponse;
 import com.exam.ai.question.dto.QuestionImportResult;
-import com.exam.ai.question.vo.QuestionResponse;
+import com.exam.ai.question.entity.ExamQuestionSource;
 import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
 import com.exam.ai.question.service.QuestionBankService;
+import com.exam.ai.question.vo.QuestionResponse;
+import com.exam.ai.system.service.NotificationService;
 import com.exam.ai.system.service.SystemConfigService;
 import com.exam.ai.util.CurrentUserUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.ObjectProvider;
+import java.util.Set;
+import javax.imageio.ImageIO;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 文档解析业务实现类，负责文档上传、文本提取结果入库、AI 分片解析和解析结果查询。
+ * PDF 文档解析业务实现。
  *
- * <p>解析流程以文档、解析批次、解析分片三层数据承载状态，失败分片可重复进入解析流程，
- * 便于在 AI 临时失败或配置重试次数变化后继续处理。</p>
+ * <p>当前文档链路只支持 PDF：上传保存原文件，定时任务将 PDF 渲染为页图片，用户触发 AI
+ * 后按页识别并把原始 JSON 保存到页 chunk。只有文档进入 AI_PARSE_COMPLETE 后，后处理定时任务
+ * 才会统一读取 raw_json 并生成待确认题目。</p>
  */
 @Service
 public class DocumentServiceImpl implements DocumentService {
 
-    private static final String SYSTEM_PROMPT = """
-            你是考试题目结构化解析助手。请从用户提供的文档文本中识别已有题目，不要生成新题。
-            只返回 JSON，不要返回 Markdown、解释文字或代码块。
-            JSON 格式必须为：
-            {"questions":[{"type":"SINGLE_CHOICE|MULTIPLE_CHOICE|TRUE_FALSE|SHORT_ANSWER","stem":"题干","options":["A. ..."],"standardAnswer":"标准答案","explanation":"答案解析","difficultyStars":1,"confidence":0.9,"categoryName":"题库分类"}]}
-            difficultyStars 必须是 1 到 5 的整数，confidence 必须是 0 到 1。
-            如果某题没有选项，options 返回空数组。
-            categoryName 由题目知识点或题目类型归纳得出，例如 Java 基础、数学应用题、鸡兔同笼、数据库索引。
-            """;
+    private static final String PDF_TYPE = "pdf";
+    private static final String PAGE_IMAGE_FORMAT = "png";
+    private static final String PAGE_IMAGE_FILE_PATTERN = "page-%03d.png";
+    private static final String PAGE_DIRECTORY = "pages";
+    private static final int RENDER_DPI = 200;
+    private static final int RENDER_BATCH_SIZE = 5;
+    private static final int RAW_JSON_BATCH_SIZE = 5;
+    private static final String PDF_NOT_READY_MESSAGE = "PDF 页面图片尚未准备完成，请稍后再试";
+    private static final String DOCUMENT_RENDER_FAILED_TITLE = "PDF 页面渲染失败";
+    private static final String DOCUMENT_ANALYSIS_FAILED_TITLE = "PDF AI 页面解析存在失败页";
 
     private final ExamDocumentMapper documentMapper;
     private final ExamDocumentAnalysisMapper analysisMapper;
@@ -70,68 +82,66 @@ public class DocumentServiceImpl implements DocumentService {
     private final ExamQuestionSourceMapper sourceMapper;
     private final QuestionBankService questionBankService;
     private final DocumentFileService fileService;
-    private final DocumentChunker documentChunker;
+    private final DocumentVisionRecognitionClient visionRecognitionClient;
     private final QuestionAnalysisParser parser;
-    private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
-    private final ObjectMapper objectMapper;
-    private final AiAnalysisProperties aiProperties;
     private final SystemConfigService systemConfigService;
+    private final NotificationService notificationService;
+    private final DocumentProperties documentProperties;
     private final String modelName;
-    private final String apiKey;
 
     /**
-     * 构造 DocumentServiceImpl 实例并注入运行所需依赖。
-     * @param documentMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysisMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param chunkMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param sourceMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param questionBankService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param fileService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param documentChunker 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param parser 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param chatClientBuilderProvider 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param objectMapper 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param aiProperties 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param systemConfigService 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param modelName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param apiKey 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 构造 PDF 文档解析服务。
+     *
+     * @param documentMapper 文档主表访问器。
+     * @param analysisMapper 文档分析批次访问器。
+     * @param chunkMapper PDF 页任务访问器。
+     * @param sourceMapper 题目来源表访问器。
+     * @param questionBankService 题库导入和查询服务。
+     * @param fileService PDF 文件保存服务。
+     * @param visionRecognitionClient OpenAI-compatible 页图片识别客户端。
+     * @param parser AI JSON 题目结果解析器。
+     * @param systemConfigService 系统配置服务，用于读取单次页识别内部重试次数。
+     * @param notificationService 站内通知服务。
+     * @param documentProperties 文档存储配置。
+     * @param modelName Spring AI OpenAI-compatible 模型名。
      */
-    public DocumentServiceImpl(ExamDocumentMapper documentMapper, ExamDocumentAnalysisMapper analysisMapper,
-                           ExamDocumentAnalysisChunkMapper chunkMapper, ExamQuestionSourceMapper sourceMapper,
-                           QuestionBankService questionBankService, DocumentFileService fileService,
-                           DocumentChunker documentChunker, QuestionAnalysisParser parser,
-                           ObjectProvider<ChatClient.Builder> chatClientBuilderProvider, ObjectMapper objectMapper,
-                           AiAnalysisProperties aiProperties, SystemConfigService systemConfigService,
-                           @Value("${spring.ai.openai.chat.options.model:gpt-4o-mini}") String modelName,
-                           @Value("${spring.ai.openai.api-key:}") String apiKey) {
+    public DocumentServiceImpl(ExamDocumentMapper documentMapper,
+                               ExamDocumentAnalysisMapper analysisMapper,
+                               ExamDocumentAnalysisChunkMapper chunkMapper,
+                               ExamQuestionSourceMapper sourceMapper,
+                               QuestionBankService questionBankService,
+                               DocumentFileService fileService,
+                               DocumentVisionRecognitionClient visionRecognitionClient,
+                               QuestionAnalysisParser parser,
+                               SystemConfigService systemConfigService,
+                               NotificationService notificationService,
+                               DocumentProperties documentProperties,
+                               @Value("${spring.ai.openai.chat.options.model:gpt-4o-mini}") String modelName) {
         this.documentMapper = documentMapper;
         this.analysisMapper = analysisMapper;
         this.chunkMapper = chunkMapper;
         this.sourceMapper = sourceMapper;
         this.questionBankService = questionBankService;
         this.fileService = fileService;
-        this.documentChunker = documentChunker;
+        this.visionRecognitionClient = visionRecognitionClient;
         this.parser = parser;
-        this.chatClientBuilderProvider = chatClientBuilderProvider;
-        this.objectMapper = objectMapper;
-        this.aiProperties = aiProperties;
         this.systemConfigService = systemConfigService;
+        this.notificationService = notificationService;
+        this.documentProperties = documentProperties;
         this.modelName = modelName;
-        this.apiKey = apiKey;
     }
 
     /**
-     * 上传文档并保存文件元数据、提取文本和上传人信息。
-     * @param file 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 上传 PDF 文档并保存主记录。
+     *
+     * @param file 用户上传的 PDF 文件。
+     * @return 文档基础信息。
+     * @throws BusinessException 文件为空、大小超限、扩展名不是 PDF 或保存失败时抛出。
      */
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public DocumentResponse upload(MultipartFile file) {
         DocumentFileService.StoredDocument stored = fileService.store(file);
-        // 文件服务已完成类型、大小、落盘和文本提取校验，这里只负责业务元数据入库。
         ExamDocument document = new ExamDocument();
         document.setOriginalFilename(stored.originalFilename());
         document.setStoredFilename(stored.storedFilename());
@@ -139,20 +149,20 @@ public class DocumentServiceImpl implements DocumentService {
         document.setFileSize(stored.fileSize());
         document.setSha256(stored.sha256());
         document.setStoragePath(stored.storagePath());
-        document.setExtractedText(stored.extractedText());
+        document.setPageCount(countPdfPages(Path.of(stored.storagePath())));
         document.setStatus(DocumentStatus.UPLOADED);
         documentMapper.insert(document);
         return toDocumentResponse(documentMapper.selectById(document.getId()), null);
     }
 
     /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param page 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param size 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 分页查询当前用户上传的 PDF 文档。
+     *
+     * @param page 页码，从 1 开始。
+     * @param size 每页数量。
+     * @return 当前用户文档分页。
      */
+    @Override
     public IPage<DocumentResponse> list(long page, long size) {
         LambdaQueryWrapper<ExamDocument> query = new LambdaQueryWrapper<ExamDocument>()
                 .eq(ExamDocument::getCreateId, CurrentUserUtils.currentUserId())
@@ -162,329 +172,641 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询当前用户可见的文档详情。
+     *
+     * @param id 文档 ID。
+     * @return 文档详情和最新分析摘要。
+     * @throws BusinessException 文档不存在或无权访问时抛出。
      */
+    @Override
     public DocumentResponse detail(Long id) {
         ExamDocument document = requireVisibleDocument(id);
         return toDocumentResponse(document, latestSummary(id));
     }
 
     /**
-     * 启动文档 AI 解析，将文档文本拆分为可重试分片并汇总最终解析状态。
-     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 获取当前用户可预览的 PDF 文件路径。
+     *
+     * @param id 文档 ID。
+     * @return PDF 本地文件路径。
+     * @throws BusinessException 文档不存在、无权访问、不是 PDF 或文件缺失时抛出。
      */
-    public DocumentContentResponse content(Long id) {
+    @Override
+    public Path pdfFile(Long id) {
         ExamDocument document = requireVisibleDocument(id);
-        return new DocumentContentResponse(id, document.getExtractedText());
+        if (!PDF_TYPE.equalsIgnoreCase(document.getFileType())) {
+            throw BusinessException.badRequest("仅支持预览 PDF 文件");
+        }
+        Path path = Path.of(document.getStoragePath()).toAbsolutePath().normalize();
+        if (!Files.exists(path)) {
+            throw BusinessException.badRequest("PDF 文件不存在");
+        }
+        return path;
     }
 
     /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 按页执行 PDF AI 识别。
+     *
+     * <p>该方法只写页级 raw_json，不直接生成题目；文档进入 AI_PARSE_COMPLETE 后再由后处理定时任务
+     * 统一处理 raw_json。</p>
+     *
+     * @param documentId 文档 ID。
+     * @return 最新分析状态和页进度。
+     * @throws BusinessException 文档不存在、无权访问或页面图片未准备完成时抛出。
      */
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public AnalysisResponse analyze(Long documentId) {
-        Long currentUserId = CurrentUserUtils.currentUserId();
         ExamDocument document = requireVisibleDocument(documentId);
-        if (!List.of(DocumentStatus.UPLOADED, DocumentStatus.PARSE_FAILED, DocumentStatus.PARSE_PARTIAL_FAILED).contains(document.getStatus())) {
-            throw BusinessException.badRequest("当前文档状态不允许 AI 解析");
-        }
-        if (document.getExtractedText() == null || document.getExtractedText().isBlank()) {
-            throw BusinessException.badRequest("文档没有可分析的提取文本");
+        ensureAnalyzable(document);
+        ExamDocumentAnalysis analysis = requireLatestAnalysis(document.getId());
+        List<ExamDocumentAnalysisChunk> chunks = chunks(analysis.getId());
+        if (chunks.isEmpty()) {
+            throw BusinessException.badRequest(PDF_NOT_READY_MESSAGE);
         }
         document.setStatus(DocumentStatus.PARSING);
         documentMapper.updateById(document);
-        // 已存在失败或部分失败批次时复用原分片，避免重复创建来源记录。
-        ExamDocumentAnalysis analysis = analysisForParsing(document, currentUserId);
-        analysis.setStatus(AnalysisStatus.PROCESSING);
-        analysis.setErrorMessage(null);
-        analysisMapper.updateById(analysis);
-        processPendingChunks(document, analysis, currentUserId);
-        finishAnalysis(document, analysis);
+        processPages(document, analysis, chunks.stream()
+                .filter(chunk -> AnalysisChunkStatus.PENDING.equals(chunk.getStatus())
+                        || AnalysisChunkStatus.FAILED.equals(chunk.getStatus()))
+                .toList());
+        refreshAfterPageRecognition(document, analysis);
         return toAnalysisResponse(analysisMapper.selectById(analysis.getId()));
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     * 查询最近一次文档分析结果。
+     *
+     * @param documentId 文档 ID。
+     * @return 最近分析响应。
+     * @throws BusinessException 文档不存在、无权访问或暂无分析记录时抛出。
      */
+    @Override
     public AnalysisResponse latestAnalysis(Long documentId) {
         requireVisibleDocument(documentId);
-        ExamDocumentAnalysis analysis = latestAnalysisEntity(documentId);
-        if (analysis == null) {
-            throw BusinessException.badRequest("暂无分析结果");
-        }
-        return toAnalysisResponse(analysis);
+        return toAnalysisResponse(requireLatestAnalysis(documentId));
     }
 
     /**
-     * 获取本次解析批次；新文档创建新批次，失败重试优先复用已有分片。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 查询文档 AI 解析失败页列表。
+     *
+     * @param documentId 文档 ID。
+     * @return 失败页列表，按页码升序。
      */
-    private ExamDocumentAnalysis analysisForParsing(ExamDocument document, Long userId) {
-        ExamDocumentAnalysis analysis = DocumentStatus.UPLOADED.equals(document.getStatus())
-                ? null
-                : latestAnalysisEntity(document.getId());
-        if (analysis == null || chunks(analysis.getId()).isEmpty()) {
-            analysis = newAnalysis(document.getId(), userId);
-            analysis.setStatus(AnalysisStatus.PROCESSING);
-            analysisMapper.insert(analysis);
-            // 分片记录持久化后，每个分片可单独记录成功、失败、重试次数和原始 AI 响应。
-            createChunks(document, analysis.getId());
-        }
-        return analysis;
+    @Override
+    public List<FailedPageResponse> failedPages(Long documentId) {
+        ExamDocument document = requireVisibleDocument(documentId);
+        ExamDocumentAnalysis analysis = requireLatestAnalysis(document.getId());
+        return chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                        .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
+                        .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.FAILED)
+                        .orderByAsc(ExamDocumentAnalysisChunk::getPageNo))
+                .stream()
+                .map(chunk -> new FailedPageResponse(chunk.getPageNo(), safeRetryCount(chunk),
+                        chunk.getErrorMessage(), chunk.getPageImagePath(), chunk.getUpdateTime()))
+                .toList();
     }
 
     /**
-     * 根据最大输入字符数创建解析分片记录。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * 批量重试用户选择的失败页。
+     *
+     * @param documentId 文档 ID。
+     * @param request 失败页页码集合。
+     * @return 最新分析状态。
+     * @throws BusinessException 文档不存在、无权访问、状态不允许或页码非法时抛出。
      */
-    private void createChunks(ExamDocument document, Long analysisId) {
-        List<DocumentChunker.DocumentChunk> chunks = documentChunker.chunk(document.getExtractedText(), aiProperties.getMaxInputChars());
-        for (DocumentChunker.DocumentChunk chunk : chunks) {
-            // 分片哈希和偏移量用于排查 AI 解析问题，也方便后续做断点重试。
-            ExamDocumentAnalysisChunk entity = new ExamDocumentAnalysisChunk();
-            entity.setAnalysisId(analysisId);
-            entity.setDocumentId(document.getId());
-            entity.setChunkIndex(chunk.chunkIndex());
-            entity.setChunkText(chunk.chunkText());
-            entity.setChunkHash(chunk.chunkHash());
-            entity.setStartOffset(chunk.startOffset());
-            entity.setEndOffset(chunk.endOffset());
-            entity.setQuestionCountEstimate(chunk.questionCountEstimate());
-            entity.setOversized(chunk.oversized());
-            entity.setStatus(AnalysisChunkStatus.PENDING);
-            entity.setRetryCount(0);
-            chunkMapper.insert(entity);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AnalysisResponse retryFailedPages(Long documentId, RetryFailedPagesRequest request) {
+        ExamDocument document = requireVisibleDocument(documentId);
+        if (!DocumentStatus.AI_PARSE_FAILED_REVIEW.equals(document.getStatus())) {
+            throw BusinessException.badRequest("当前文档没有待处理失败页");
         }
-    }
-
-    /**
-     * 顺序处理待解析分片，保证题目来源排序与原文片段顺序一致。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     */
-    private void processPendingChunks(ExamDocument document, ExamDocumentAnalysis analysis, Long userId) {
-        List<ExamDocumentAnalysisChunk> pendingChunks = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+        ExamDocumentAnalysis analysis = requireLatestAnalysis(document.getId());
+        Set<Integer> selectedPageNos = new HashSet<>(request.pageNos());
+        List<ExamDocumentAnalysisChunk> selectedChunks = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
                 .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
-                .in(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.PENDING, AnalysisChunkStatus.FAILED, AnalysisChunkStatus.PROCESSING)
-                .orderByAsc(ExamDocumentAnalysisChunk::getChunkIndex));
-        for (ExamDocumentAnalysisChunk chunk : pendingChunks) {
-            // 分片内部捕获异常并写入状态，避免单个片段失败中断整个批次汇总。
-            processChunk(document, analysis, chunk, userId);
+                .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.FAILED)
+                .in(ExamDocumentAnalysisChunk::getPageNo, selectedPageNos)
+                .orderByAsc(ExamDocumentAnalysisChunk::getPageNo));
+        if (selectedChunks.size() != selectedPageNos.size()) {
+            throw BusinessException.badRequest("存在不可重试的页码");
         }
+        document.setStatus(DocumentStatus.PARSING);
+        documentMapper.updateById(document);
+        processPages(document, analysis, selectedChunks);
+        refreshAfterPageRecognition(document, analysis);
+        return toAnalysisResponse(analysisMapper.selectById(analysis.getId()));
     }
 
     /**
-     * 解析单个文档分片并将 AI 结果导入题库。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * 确认跳过所有失败页，使文档进入 AI 解析完成状态。
+     *
+     * @param documentId 文档 ID。
+     * @return 最新分析状态。
+     * @throws BusinessException 文档不存在、无权访问、状态不允许或仍有待解析页时抛出。
      */
-    private void processChunk(ExamDocument document, ExamDocumentAnalysis analysis, ExamDocumentAnalysisChunk chunk, Long userId) {
-        chunk.setStatus(AnalysisChunkStatus.PROCESSING);
-        chunk.setStartedAt(LocalDateTime.now());
-        chunk.setFinishedAt(null);
-        chunk.setErrorMessage(null);
-        chunkMapper.updateById(chunk);
-        try {
-            AnalysisComputation computation = analyzeChunkWithRetry(chunk.getChunkText());
-            parser.validate(new AiQuestionResult(computation.items()));
-            // 题目入库统一交给题库服务处理，确保分类、去重和题目状态规则只有一处实现。
-            List<QuestionImportResult> results = saveQuestions(document.getId(), analysis.getId(), chunk.getId(),
-                    chunkSortOrderBase(chunk), userId, computation.items());
-            chunk.setStatus(AnalysisChunkStatus.SUCCESS);
-            chunk.setRawJson(computation.rawJson());
-            chunk.setErrorMessage(null);
-            chunk.setFinishedAt(LocalDateTime.now());
-            chunkMapper.updateById(chunk);
-            if (!results.isEmpty()) {
-                analysis.setRawJson(appendRawJson(analysis.getRawJson(), computation.rawJson()));
-                analysisMapper.updateById(analysis);
-            }
-        } catch (Exception ex) {
-            // 失败分片保留错误和原始响应，下一次解析可基于重试次数继续处理。
-            chunk.setStatus(AnalysisChunkStatus.FAILED);
-            chunk.setRetryCount(safeRetryCount(chunk) + 1);
-            chunk.setErrorMessage(ex.getMessage());
-            if (ex instanceof AiAnalysisException aiException) {
-                chunk.setRawJson(aiException.rawResponse());
-            }
-            chunk.setFinishedAt(LocalDateTime.now());
-            chunkMapper.updateById(chunk);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AnalysisResponse confirmSkipFailedPages(Long documentId) {
+        ExamDocument document = requireVisibleDocument(documentId);
+        if (!DocumentStatus.AI_PARSE_FAILED_REVIEW.equals(document.getStatus())) {
+            throw BusinessException.badRequest("当前文档没有待确认失败页");
         }
-    }
-
-    /**
-     * 按系统配置的最大重试次数调用 AI，最终保留最后一次异常。
-     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private AnalysisComputation analyzeChunkWithRetry(String text) throws JsonProcessingException {
-        int attempts = 1 + Math.max(0, systemConfigService.aiDocumentAnalysisMaxRetries());
-        Exception lastException = null;
-        for (int attempt = 1; attempt <= attempts; attempt++) {
-            try {
-                return analyzeChunk(text);
-            } catch (Exception ex) {
-                // 这里不中断循环，让临时网络或模型响应异常有机会通过配置重试恢复。
-                lastException = ex;
-            }
-        }
-        if (lastException instanceof JsonProcessingException jsonProcessingException) {
-            throw jsonProcessingException;
-        }
-        if (lastException instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        throw BusinessException.badRequest("AI 分析失败");
-    }
-
-    /**
-     * 调用 AI 模型解析文档片段，并将模型响应转换为结构化题目集合。
-     * @param text 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private AnalysisComputation analyzeChunk(String text) throws JsonProcessingException {
-        if (apiKey == null || apiKey.isBlank() || "sk-placeholder".equals(apiKey)) {
-            throw BusinessException.badRequest("AI API Key 未配置");
-        }
-        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
-        if (builder == null) {
-            throw BusinessException.badRequest("AI 客户端未配置");
-        }
-        String raw = builder.build().prompt()
-                .system(SYSTEM_PROMPT)
-                .user("请解析以下文档片段中的完整题目：\n\n" + text)
-                .call()
-                .content();
-        try {
-            // 解析器只接受 JSON 结构，防止模型附加说明文字污染题库数据。
-            List<AiQuestionItem> items = parser.parse(raw).questions();
-            if (items.isEmpty()) {
-                throw BusinessException.badRequest("AI 未识别到题目");
-            }
-            return new AnalysisComputation(items, raw);
-        } catch (BusinessException ex) {
-            throw new AiAnalysisException(ex.getMessage(), raw, ex);
-        }
-    }
-
-    /**
-     * 汇总分片结果并同步更新解析批次和文档主状态。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     */
-    private void finishAnalysis(ExamDocument document, ExamDocumentAnalysis analysis) {
+        ExamDocumentAnalysis analysis = requireLatestAnalysis(document.getId());
         ChunkProgressResponse progress = chunkProgress(analysis.getId());
-        if (progress.total() == 0 || progress.success() == 0 && progress.failed() > 0) {
-            // 全部失败时文档仍可再次发起解析，但不会进入待确认题目列表。
-            analysis.setStatus(AnalysisStatus.FAILED);
-            analysis.setErrorMessage(progress.latestErrorMessage());
-            document.setStatus(DocumentStatus.PARSE_FAILED);
-        } else if (progress.failed() > 0) {
-            // 部分失败时保留已成功导入的题目，同时提示用户存在未完成分片。
-            analysis.setStatus(AnalysisStatus.PARTIAL_FAILED);
-            analysis.setErrorMessage(progress.latestErrorMessage());
-            document.setStatus(DocumentStatus.PARSE_PARTIAL_FAILED);
+        if (progress.pending() > 0 || progress.processing() > 0) {
+            throw BusinessException.badRequest("仍有页面未完成解析，不能确认跳过");
+        }
+        List<ExamDocumentAnalysisChunk> failedChunks = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
+                .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.FAILED));
+        for (ExamDocumentAnalysisChunk chunk : failedChunks) {
+            chunk.setStatus(AnalysisChunkStatus.SKIPPED);
+            chunk.setFinishedAt(LocalDateTime.now());
+            chunkMapper.updateById(chunk);
+        }
+        document.setStatus(DocumentStatus.AI_PARSE_COMPLETE);
+        documentMapper.updateById(document);
+        analysis.setStatus(AnalysisStatus.SUCCESS);
+        analysis.setErrorMessage(null);
+        analysisMapper.updateById(analysis);
+        return toAnalysisResponse(analysisMapper.selectById(analysis.getId()));
+    }
+
+    /**
+     * 定时任务渲染待处理 PDF 的页面图片。
+     */
+    @Override
+    public void renderPendingPdfPages() {
+        List<ExamDocument> documents = documentMapper.selectList(new LambdaQueryWrapper<ExamDocument>()
+                .in(ExamDocument::getStatus, DocumentStatus.UPLOADED, DocumentStatus.PAGE_RENDER_FAILED)
+                .eq(ExamDocument::getFileType, PDF_TYPE)
+                .orderByAsc(ExamDocument::getId)
+                .last("LIMIT " + RENDER_BATCH_SIZE));
+        for (ExamDocument document : documents) {
+            renderDocumentPages(document);
+        }
+    }
+
+    /**
+     * 定时任务处理已完成页级 AI 解析的 raw_json。
+     */
+    @Override
+    public void processCompletedRawJson() {
+        List<ExamDocument> documents = documentMapper.selectList(new LambdaQueryWrapper<ExamDocument>()
+                .eq(ExamDocument::getStatus, DocumentStatus.AI_PARSE_COMPLETE)
+                .orderByAsc(ExamDocument::getId)
+                .last("LIMIT " + RAW_JSON_BATCH_SIZE));
+        for (ExamDocument document : documents) {
+            processDocumentRawJson(document);
+        }
+    }
+
+    /**
+     * 渲染单个 PDF 文档页面并生成页 chunk。
+     *
+     * @param document 待渲染 PDF 文档。
+     */
+    private void renderDocumentPages(ExamDocument document) {
+        document.setStatus(DocumentStatus.PAGE_RENDERING);
+        documentMapper.updateById(document);
+        try {
+            ExamDocumentAnalysis analysis = ensureAnalysis(document);
+            Path pdfPath = Path.of(document.getStoragePath()).toAbsolutePath().normalize();
+            Path pageDirectory = pageDirectory(document.getId());
+            Files.createDirectories(pageDirectory);
+            try (PDDocument pdf = Loader.loadPDF(pdfPath.toFile())) {
+                PDFRenderer renderer = new PDFRenderer(pdf);
+                for (int pageIndex = 0; pageIndex < pdf.getNumberOfPages(); pageIndex++) {
+                    int pageNo = pageIndex + 1;
+                    BufferedImage image = renderer.renderImageWithDPI(pageIndex, RENDER_DPI, ImageType.RGB);
+                    Path imagePath = pageDirectory.resolve(PAGE_IMAGE_FILE_PATTERN.formatted(pageNo));
+                    ImageIO.write(image, PAGE_IMAGE_FORMAT, imagePath.toFile());
+                    upsertPageChunk(document, analysis, pageNo, imagePath, image.getWidth(), image.getHeight());
+                }
+            }
+            document.setStatus(DocumentStatus.PAGE_READY);
+            documentMapper.updateById(document);
+        } catch (Exception ex) {
+            document.setStatus(DocumentStatus.PAGE_RENDER_FAILED);
+            documentMapper.updateById(document);
+            notificationService.create(document.getCreateId(), DOCUMENT_RENDER_FAILED_TITLE,
+                    "文档《" + document.getOriginalFilename() + "》PDF 页面渲染失败：" + ex.getMessage(),
+                    NotificationService.TYPE_AI_DOCUMENT_RENDER_FAILED, NotificationService.BUSINESS_DOCUMENT, document.getId());
+        }
+    }
+
+    /**
+     * 新增或更新 PDF 页 chunk。
+     *
+     * @param document 文档实体。
+     * @param analysis 分析批次。
+     * @param pageNo 页码。
+     * @param imagePath 页图片路径。
+     * @param width 图片宽度。
+     * @param height 图片高度。
+     */
+    private void upsertPageChunk(ExamDocument document, ExamDocumentAnalysis analysis, int pageNo, Path imagePath, int width, int height) {
+        ExamDocumentAnalysisChunk chunk = chunkMapper.selectOne(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
+                .eq(ExamDocumentAnalysisChunk::getPageNo, pageNo)
+                .last("LIMIT 1"));
+        if (chunk == null) {
+            chunk = new ExamDocumentAnalysisChunk();
+            chunk.setAnalysisId(analysis.getId());
+            chunk.setDocumentId(document.getId());
+            chunk.setPageNo(pageNo);
+            chunk.setRetryCount(0);
+            chunk.setStatus(AnalysisChunkStatus.PENDING);
+            chunk.setCreateId(document.getCreateId());
+        }
+        chunk.setPageImagePath(imagePath.toString());
+        chunk.setPageWidth(width);
+        chunk.setPageHeight(height);
+        if (!AnalysisChunkStatus.SUCCESS.equals(chunk.getStatus())) {
+            chunk.setStatus(AnalysisChunkStatus.PENDING);
+        }
+        if (chunk.getId() == null) {
+            chunkMapper.insert(chunk);
         } else {
-            // 全部分片成功后，文档进入题目确认阶段，前端可展示解析出的题目。
+            chunkMapper.updateById(chunk);
+        }
+    }
+
+    /**
+     * 顺序处理页级 AI 识别任务。
+     *
+     * @param document 文档实体。
+     * @param analysis 分析批次。
+     * @param pages 待处理页集合。
+     */
+    private void processPages(ExamDocument document, ExamDocumentAnalysis analysis, List<ExamDocumentAnalysisChunk> pages) {
+        for (ExamDocumentAnalysisChunk page : pages) {
+            processSinglePage(page);
+        }
+        analysis.setStatus(AnalysisStatus.PROCESSING);
+        analysisMapper.updateById(analysis);
+    }
+
+    /**
+     * 识别单页图片并保存 raw_json。
+     *
+     * @param page 页级任务。
+     */
+    private void processSinglePage(ExamDocumentAnalysisChunk page) {
+        int maxAttempts = 1 + Math.max(0, systemConfigService.aiDocumentAnalysisMaxRetries());
+        int failedAttempts = 0;
+        String latestError = null;
+        page.setStatus(AnalysisChunkStatus.PROCESSING);
+        page.setStartedAt(LocalDateTime.now());
+        page.setFinishedAt(null);
+        page.setErrorMessage(null);
+        chunkMapper.updateById(page);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                String rawJson = visionRecognitionClient.recognizePage(Path.of(page.getPageImagePath()), page.getPageNo());
+                page.setRawJson(rawJson);
+                page.setStatus(AnalysisChunkStatus.SUCCESS);
+                page.setErrorMessage(null);
+                page.setFinishedAt(LocalDateTime.now());
+                page.setRetryCount(safeRetryCount(page) + failedAttempts);
+                page.setNotifiedAt(null);
+                chunkMapper.updateById(page);
+                return;
+            } catch (Exception ex) {
+                failedAttempts++;
+                latestError = ex.getMessage();
+            }
+        }
+        page.setStatus(AnalysisChunkStatus.FAILED);
+        page.setErrorMessage(latestError);
+        page.setFinishedAt(LocalDateTime.now());
+        page.setRetryCount(safeRetryCount(page) + failedAttempts);
+        chunkMapper.updateById(page);
+    }
+
+    /**
+     * 根据页级识别结果刷新文档与分析批次状态。
+     *
+     * @param document 文档实体。
+     * @param analysis 分析批次。
+     */
+    private void refreshAfterPageRecognition(ExamDocument document, ExamDocumentAnalysis analysis) {
+        ChunkProgressResponse progress = chunkProgress(analysis.getId());
+        if (progress.failed() > 0) {
+            document.setStatus(DocumentStatus.AI_PARSE_FAILED_REVIEW);
+            analysis.setStatus(progress.success() > 0 ? AnalysisStatus.PARTIAL_FAILED : AnalysisStatus.FAILED);
+            analysis.setErrorMessage(progress.latestErrorMessage());
+            notifyFailedPages(document, analysis);
+        } else if (progress.pending() == 0 && progress.processing() == 0 && progress.total() > 0) {
+            document.setStatus(DocumentStatus.AI_PARSE_COMPLETE);
             analysis.setStatus(AnalysisStatus.SUCCESS);
             analysis.setErrorMessage(null);
-            document.setStatus(DocumentStatus.PENDING_CONFIRMATION);
+        } else {
+            document.setStatus(DocumentStatus.PAGE_READY);
         }
-        analysisMapper.updateById(analysis);
         documentMapper.updateById(document);
+        analysisMapper.updateById(analysis);
     }
 
     /**
-     * 创建业务数据并完成必要的默认状态初始化。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 通知文档创建人进入失败页确认页面。
+     *
+     * @param document 文档实体。
+     * @param analysis 分析批次。
      */
-    private List<QuestionImportResult> saveQuestions(Long documentId, Long analysisId, Long userId, List<AiQuestionItem> items)
-            throws JsonProcessingException {
-        return saveQuestions(documentId, analysisId, null, 1, userId, items);
-    }
-
-    /**
-     * 创建业务数据并完成必要的默认状态初始化。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param chunkId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param startOrder 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private List<QuestionImportResult> saveQuestions(Long documentId, Long analysisId, Long chunkId, int startOrder,
-                                                     Long userId, List<AiQuestionItem> items)
-            throws JsonProcessingException {
-        int order = startOrder;
-        List<QuestionImportResult> results = new ArrayList<>();
-        for (AiQuestionItem item : items) {
-            results.add(questionBankService.importQuestion(item, documentId, analysisId, chunkId, order++, userId));
+    private void notifyFailedPages(ExamDocument document, ExamDocumentAnalysis analysis) {
+        List<ExamDocumentAnalysisChunk> failedChunks = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
+                .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.FAILED)
+                .isNull(ExamDocumentAnalysisChunk::getNotifiedAt));
+        if (failedChunks.isEmpty()) {
+            return;
         }
-        return results;
+        notificationService.create(document.getCreateId(), DOCUMENT_ANALYSIS_FAILED_TITLE,
+                "文档《" + document.getOriginalFilename() + "》存在 " + failedChunks.size() + " 个失败页，请在文档详情中重试或确认跳过。",
+                NotificationService.TYPE_AI_DOCUMENT_ANALYSIS_FAILED, NotificationService.BUSINESS_DOCUMENT, document.getId());
+        LocalDateTime notifiedAt = LocalDateTime.now();
+        for (ExamDocumentAnalysisChunk chunk : failedChunks) {
+            chunk.setNotifiedAt(notifiedAt);
+            chunkMapper.updateById(chunk);
+        }
     }
 
     /**
-     * 校验业务参数或业务状态，阻止非法流程继续执行。
-     * @param id 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param principal 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 统一处理单个 AI_PARSE_COMPLETE 文档的 raw_json。
+     *
+     * @param document 文档实体。
+     */
+    private void processDocumentRawJson(ExamDocument document) {
+        ExamDocumentAnalysis analysis = latestAnalysisEntity(document.getId());
+        if (analysis == null) {
+            return;
+        }
+        document.setStatus(DocumentStatus.RAW_JSON_PROCESSING);
+        documentMapper.updateById(document);
+        try {
+            List<ExamDocumentAnalysisChunk> successPages = chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                    .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
+                    .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.SUCCESS)
+                    .orderByAsc(ExamDocumentAnalysisChunk::getPageNo));
+            List<PageQuestions> pageQuestions = new ArrayList<>();
+            for (ExamDocumentAnalysisChunk page : successPages) {
+                pageQuestions.add(new PageQuestions(page.getId(), parser.parse(page.getRawJson()).questions()));
+            }
+            importPageQuestions(document, analysis, pageQuestions);
+            document.setStatus(DocumentStatus.PENDING_CONFIRMATION);
+            documentMapper.updateById(document);
+            analysis.setStatus(AnalysisStatus.SUCCESS);
+            analysis.setErrorMessage(null);
+            analysisMapper.updateById(analysis);
+        } catch (Exception ex) {
+            document.setStatus(DocumentStatus.PARSE_FAILED);
+            documentMapper.updateById(document);
+            analysis.setStatus(AnalysisStatus.FAILED);
+            analysis.setErrorMessage(ex.getMessage());
+            analysisMapper.updateById(analysis);
+            notificationService.create(document.getCreateId(), "PDF AI 结果处理失败",
+                    "文档《" + document.getOriginalFilename() + "》AI 结果处理失败：" + ex.getMessage(),
+                    NotificationService.TYPE_AI_DOCUMENT_ANALYSIS_FAILED, NotificationService.BUSINESS_DOCUMENT, document.getId());
+        }
+    }
+
+    /**
+     * 将页级 raw_json 解析出的题目导入待确认题库。
+     *
+     * @param document 文档实体。
+     * @param analysis 分析批次。
+     * @param pageQuestions 每页题目集合。
+     * @throws JsonProcessingException 题目选项序列化失败时抛出。
+     */
+    private void importPageQuestions(ExamDocument document, ExamDocumentAnalysis analysis, List<PageQuestions> pageQuestions)
+            throws JsonProcessingException {
+        int sortOrder = 1;
+        for (PageQuestions pageQuestion : pageQuestions) {
+            for (AiQuestionItem item : pageQuestion.questions()) {
+                questionBankService.importQuestion(item, document.getId(), analysis.getId(), pageQuestion.chunkId(), sortOrder++, document.getCreateId());
+            }
+        }
+    }
+
+    /**
+     * 校验文档当前状态是否允许发起页级 AI 识别。
+     *
+     * @param document 文档实体。
+     */
+    private void ensureAnalyzable(ExamDocument document) {
+        if (DocumentStatus.PAGE_RENDERING.equals(document.getStatus())) {
+            throw BusinessException.badRequest("PDF 页面图片正在生成，请稍后再试");
+        }
+        if (DocumentStatus.UPLOADED.equals(document.getStatus()) || DocumentStatus.PAGE_RENDER_FAILED.equals(document.getStatus())) {
+            throw BusinessException.badRequest(PDF_NOT_READY_MESSAGE);
+        }
+        if (!List.of(DocumentStatus.PAGE_READY, DocumentStatus.AI_PARSE_FAILED_REVIEW).contains(document.getStatus())) {
+            throw BusinessException.badRequest("当前文档状态不允许 AI 解析");
+        }
+    }
+
+    /**
+     * 查询当前用户可见文档。
+     *
+     * @param id 文档 ID。
+     * @return 文档实体。
      */
     private ExamDocument requireVisibleDocument(Long id) {
         ExamDocument document = documentMapper.selectById(id);
         if (document == null) {
             throw BusinessException.badRequest("文档不存在");
         }
-        if (!document.getCreateId().equals(CurrentUserUtils.currentUserId())) {
+        if (!CurrentUserUtils.currentUserId().equals(document.getCreateId())) {
             throw BusinessException.forbidden();
         }
         return document;
     }
 
     /**
-     * 创建业务数据并完成必要的默认状态初始化。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param createdBy 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 查询或创建文档分析批次。
+     *
+     * @param document 文档实体。
+     * @return 分析批次。
      */
-    private ExamDocumentAnalysis newAnalysis(Long documentId, Long createdBy) {
-        ExamDocumentAnalysis analysis = new ExamDocumentAnalysis();
-        analysis.setDocumentId(documentId);
+    private ExamDocumentAnalysis ensureAnalysis(ExamDocument document) {
+        ExamDocumentAnalysis analysis = latestAnalysisEntity(document.getId());
+        if (analysis != null) {
+            return analysis;
+        }
+        analysis = new ExamDocumentAnalysis();
+        analysis.setDocumentId(document.getId());
         analysis.setModelName(modelName);
         analysis.setStatus(AnalysisStatus.PROCESSING);
-        analysis.setCreateId(createdBy);
+        analysis.setCreateId(document.getCreateId());
+        analysisMapper.insert(analysis);
         return analysis;
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 查询最近分析批次，不存在时抛出业务异常。
+     *
+     * @param documentId 文档 ID。
+     * @return 最近分析批次。
+     */
+    private ExamDocumentAnalysis requireLatestAnalysis(Long documentId) {
+        ExamDocumentAnalysis analysis = latestAnalysisEntity(documentId);
+        if (analysis == null) {
+            throw BusinessException.badRequest("暂无分析记录");
+        }
+        return analysis;
+    }
+
+    /**
+     * 查询最近分析批次。
+     *
+     * @param documentId 文档 ID。
+     * @return 最近分析批次；不存在返回 {@code null}。
+     */
+    private ExamDocumentAnalysis latestAnalysisEntity(Long documentId) {
+        return analysisMapper.selectOne(new LambdaQueryWrapper<ExamDocumentAnalysis>()
+                .eq(ExamDocumentAnalysis::getDocumentId, documentId)
+                .orderByDesc(ExamDocumentAnalysis::getId)
+                .last("LIMIT 1"));
+    }
+
+    /**
+     * 查询分析批次下所有页 chunk。
+     *
+     * @param analysisId 分析批次 ID。
+     * @return 页 chunk 列表。
+     */
+    private List<ExamDocumentAnalysisChunk> chunks(Long analysisId) {
+        return chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysisId)
+                .orderByAsc(ExamDocumentAnalysisChunk::getPageNo));
+    }
+
+    /**
+     * 统计页级解析进度。
+     *
+     * @param analysisId 分析批次 ID。
+     * @return 进度响应。
+     */
+    private ChunkProgressResponse chunkProgress(Long analysisId) {
+        List<ExamDocumentAnalysisChunk> chunks = chunks(analysisId);
+        int success = 0;
+        int failed = 0;
+        int pending = 0;
+        int processing = 0;
+        int skipped = 0;
+        String latestError = null;
+        for (ExamDocumentAnalysisChunk chunk : chunks) {
+            if (AnalysisChunkStatus.SUCCESS.equals(chunk.getStatus())) {
+                success++;
+            } else if (AnalysisChunkStatus.FAILED.equals(chunk.getStatus())) {
+                failed++;
+                latestError = chunk.getErrorMessage();
+            } else if (AnalysisChunkStatus.PROCESSING.equals(chunk.getStatus())) {
+                processing++;
+            } else if (AnalysisChunkStatus.SKIPPED.equals(chunk.getStatus())) {
+                skipped++;
+            } else {
+                pending++;
+            }
+        }
+        return new ChunkProgressResponse(chunks.size(), success, failed, pending, processing, skipped, latestError);
+    }
+
+    /**
+     * 转换文档实体为前端响应。
+     *
+     * @param document 文档实体。
+     * @param latestAnalysis 最新分析摘要。
+     * @return 文档响应。
+     */
+    private DocumentResponse toDocumentResponse(ExamDocument document, AnalysisSummary latestAnalysis) {
+        int renderedPageCount = renderedPageCount(document.getId());
+        int pageCount = effectivePageCount(document, renderedPageCount);
+        return new DocumentResponse(
+                document.getId(),
+                document.getOriginalFilename(),
+                document.getFileType(),
+                document.getFileSize(),
+                document.getSha256(),
+                pageCount,
+                renderedPageCount,
+                renderProgressPercent(document.getStatus(), pageCount, renderedPageCount),
+                document.getStatus(),
+                document.getCreateId(),
+                document.getCreateTime(),
+                latestAnalysis
+        );
+    }
+
+    /**
+     * 读取 PDF 总页数，用于上传响应和后续分片真实进度计算。
+     *
+     * @param pdfPath 已落盘的 PDF 文件路径。
+     * @return PDF 总页数。
+     */
+    private int countPdfPages(Path pdfPath) {
+        try (PDDocument pdf = Loader.loadPDF(pdfPath.toFile())) {
+            return pdf.getNumberOfPages();
+        } catch (IOException ex) {
+            throw BusinessException.badRequest("PDF 页数读取失败");
+        }
+    }
+
+    /**
+     * 统计当前文档已经生成的页图片分片数量。
+     *
+     * @param documentId 文档 ID。
+     * @return 已生成页分片数量。
+     */
+    private int renderedPageCount(Long documentId) {
+        Long count = chunkMapper.selectCount(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
+                .eq(ExamDocumentAnalysisChunk::getDocumentId, documentId));
+        return count == null ? 0 : count.intValue();
+    }
+
+    /**
+     * 获取可用于进度展示的总页数，兼容历史数据缺少 page_count 的情况。
+     *
+     * @param document 文档实体。
+     * @param renderedPageCount 已生成页数。
+     * @return 有效总页数。
+     */
+    private int effectivePageCount(ExamDocument document, int renderedPageCount) {
+        if (document.getPageCount() != null && document.getPageCount() > 0) {
+            return document.getPageCount();
+        }
+        return renderedPageCount;
+    }
+
+    /**
+     * 根据状态、总页数和已生成页数计算页图片分片百分比。
+     *
+     * @param status 文档状态。
+     * @param pageCount PDF 总页数。
+     * @param renderedPageCount 已生成页数。
+     * @return 0 到 100 的整数进度。
+     */
+    private int renderProgressPercent(String status, int pageCount, int renderedPageCount) {
+        if (DocumentStatus.PAGE_READY.equals(status)) {
+            return 100;
+        }
+        if (DocumentStatus.UPLOADED.equals(status)) {
+            return 0;
+        }
+        if (pageCount <= 0) {
+            return 0;
+        }
+        return Math.min(100, Math.max(0, renderedPageCount * 100 / pageCount));
+    }
+
+    /**
+     * 查询文档最新分析摘要。
+     *
+     * @param documentId 文档 ID。
+     * @return 最新分析摘要；不存在时返回 {@code null}。
      */
     private AnalysisSummary latestSummary(Long documentId) {
         ExamDocumentAnalysis analysis = latestAnalysisEntity(documentId);
@@ -498,41 +820,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 查询或解析业务数据，返回前端或内部流程需要的结果。
-     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private ExamDocumentAnalysis latestAnalysisEntity(Long documentId) {
-        return analysisMapper.selectOne(new LambdaQueryWrapper<ExamDocumentAnalysis>()
-                .eq(ExamDocumentAnalysis::getDocumentId, documentId)
-                .orderByDesc(ExamDocumentAnalysis::getId)
-                .last("LIMIT 1"));
-    }
-
-    /**
-     * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param document 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param latestAnalysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private DocumentResponse toDocumentResponse(ExamDocument document, AnalysisSummary latestAnalysis) {
-        return new DocumentResponse(
-                document.getId(),
-                document.getOriginalFilename(),
-                document.getFileType(),
-                document.getFileSize(),
-                document.getSha256(),
-                document.getStatus(),
-                document.getCreateId(),
-                document.getCreateTime(),
-                latestAnalysis
-        );
-    }
-
-    /**
-     * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 转换分析批次为前端响应。
+     *
+     * @param analysis 分析批次。
+     * @return 分析响应。
      */
     private AnalysisResponse toAnalysisResponse(ExamDocumentAnalysis analysis) {
         List<ExamQuestionSource> sources = sourceMapper.selectList(new LambdaQueryWrapper<ExamQuestionSource>()
@@ -551,129 +842,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param analysis 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param importResults 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private AnalysisResponse toAnalysisResponse(ExamDocumentAnalysis analysis, List<QuestionImportResult> importResults) {
-        return new AnalysisResponse(
-                analysis.getId(),
-                analysis.getDocumentId(),
-                analysis.getStatus(),
-                analysis.getModelName(),
-                analysis.getErrorMessage(),
-                chunkProgress(analysis.getId()),
-                analysis.getCreateTime(),
-                importResults.stream().map(this::toQuestionResponse).toList()
-        );
-    }
-
-    /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private List<ExamDocumentAnalysisChunk> chunks(Long analysisId) {
-        return chunkMapper.selectList(new LambdaQueryWrapper<ExamDocumentAnalysisChunk>()
-                .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysisId)
-                .orderByAsc(ExamDocumentAnalysisChunk::getChunkIndex));
-    }
-
-    /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private ChunkProgressResponse chunkProgress(Long analysisId) {
-        List<ExamDocumentAnalysisChunk> chunks = chunks(analysisId);
-        int success = 0;
-        int failed = 0;
-        int pending = 0;
-        int processing = 0;
-        int oversized = 0;
-        String latestError = null;
-        for (ExamDocumentAnalysisChunk chunk : chunks) {
-            if (AnalysisChunkStatus.SUCCESS.equals(chunk.getStatus())) {
-                success++;
-            } else if (AnalysisChunkStatus.FAILED.equals(chunk.getStatus())) {
-                failed++;
-                latestError = chunk.getErrorMessage();
-            } else if (AnalysisChunkStatus.PROCESSING.equals(chunk.getStatus())) {
-                processing++;
-            } else {
-                pending++;
-            }
-            if (Boolean.TRUE.equals(chunk.getOversized())) {
-                oversized++;
-            }
-        }
-        return new ChunkProgressResponse(chunks.size(), success, failed, pending, processing, oversized, latestError);
-    }
-
-    /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private int safeRetryCount(ExamDocumentAnalysisChunk chunk) {
-        return chunk.getRetryCount() == null ? 0 : chunk.getRetryCount();
-    }
-
-    /**
-     * 查询业务数据集合，并按调用场景组织返回结构。
-     * @param chunk 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private int chunkSortOrderBase(ExamDocumentAnalysisChunk chunk) {
-        int chunkIndex = chunk.getChunkIndex() == null ? 0 : chunk.getChunkIndex();
-        return chunkIndex * 10_000 + 1;
-    }
-
-    /**
-     * 执行当前业务步骤，并返回调用方需要的处理结果。
-     * @param existing 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param raw 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private String appendRawJson(String existing, String raw) {
-        if (raw == null || raw.isBlank()) {
-            return existing;
-        }
-        if (existing == null || existing.isBlank()) {
-            return raw;
-        }
-        return existing + "\n" + raw;
-    }
-
-    /**
-     * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param result 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
-     */
-    private QuestionAnalysisResponse toQuestionResponse(QuestionImportResult result) {
-        QuestionResponse question = questionBankService.toQuestionResponse(result.question());
-        return new QuestionAnalysisResponse(
-                question.id(),
-                question.categoryId(),
-                question.categoryName(),
-                question.questionType(),
-                question.stem(),
-                question.options(),
-                question.standardAnswer(),
-                question.explanation(),
-                question.difficultyStars(),
-                question.state(),
-                result.newlyCreated(),
-                result.confidence(),
-                result.sortOrder()
-        );
-    }
-
-    /**
-     * 转换业务对象，生成前端返回视图或内部传输结构。
-     * @param source 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 转换题目来源为页面展示题目。
+     *
+     * @param source 题目来源。
+     * @return 分析题目响应。
      */
     private QuestionAnalysisResponse toQuestionResponse(ExamQuestionSource source) {
         QuestionResponse question = questionBankService.detail(source.getQuestionId());
@@ -695,38 +867,34 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * AnalysisComputation 不可变业务数据记录，用于接口入参、接口返回或服务间传输。
-     * @param items 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @param rawJson 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
-     * @return 封装后的业务处理结果。
+     * 获取页重试次数，空值按 0 处理。
+     *
+     * @param chunk 页 chunk。
+     * @return 安全重试次数。
      */
-    private record AnalysisComputation(List<AiQuestionItem> items, String rawJson) {
+    private int safeRetryCount(ExamDocumentAnalysisChunk chunk) {
+        return chunk.getRetryCount() == null ? 0 : chunk.getRetryCount();
     }
 
     /**
-     * AI 分析异常，携带模型原始响应以便失败分片落库排查。
+     * 获取文档页图片目录。
+     *
+     * @param documentId 文档 ID。
+     * @return 页图片目录。
      */
-    private static final class AiAnalysisException extends RuntimeException {
-        private final String rawResponse;
+    private Path pageDirectory(Long documentId) {
+        return documentProperties.getStoragePath().toAbsolutePath().normalize()
+                .resolve(String.valueOf(documentId))
+                .resolve(PAGE_DIRECTORY)
+                .normalize();
+    }
 
-        /**
-         * 构造 AI 分析异常。
-         * @param message 业务错误信息。
-         * @param rawResponse 模型返回的原始文本。
-         * @param cause 原始异常。
-         */
-        private AiAnalysisException(String message, String rawResponse, Throwable cause) {
-            super(message, cause);
-            this.rawResponse = rawResponse;
-        }
-
-        /**
-         * 执行当前业务步骤，并返回调用方需要的处理结果。
-         * @return 封装后的业务处理结果。
-         */
-        private String rawResponse() {
-            return rawResponse;
-        }
+    /**
+     * 页级题目集合。
+     *
+     * @param chunkId 页 chunk ID。
+     * @param questions 当前页识别题目。
+     */
+    private record PageQuestions(Long chunkId, List<AiQuestionItem> questions) {
     }
 }
-

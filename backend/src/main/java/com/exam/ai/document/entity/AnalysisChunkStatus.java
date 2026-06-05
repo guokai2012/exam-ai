@@ -12,6 +12,7 @@ public final class AnalysisChunkStatus {
     public static final String PROCESSING = "PROCESSING";
     public static final String SUCCESS = "SUCCESS";
     public static final String FAILED = "FAILED";
+    public static final String SKIPPED = "SKIPPED";
 
     private AnalysisChunkStatus() {
     }

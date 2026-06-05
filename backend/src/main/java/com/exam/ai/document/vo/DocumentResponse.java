@@ -21,6 +21,12 @@ public record DocumentResponse(
         Long fileSize,
         @Schema(description = "文件 SHA-256")
         String sha256,
+        @Schema(description = "PDF 总页数")
+        Integer pageCount,
+        @Schema(description = "已完成页图片分片数")
+        Integer renderedPageCount,
+        @Schema(description = "页图片分片进度百分比")
+        Integer renderProgressPercent,
         @Schema(description = "文档状态")
         String status,
         @Schema(description = "创建人用户 ID，文档场景下即上传人用户 ID")

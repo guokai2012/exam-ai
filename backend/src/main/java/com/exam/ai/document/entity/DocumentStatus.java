@@ -9,8 +9,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public final class DocumentStatus {
 
     public static final String UPLOADED = "UPLOADED";
+    public static final String PAGE_RENDERING = "PAGE_RENDERING";
+    public static final String PAGE_READY = "PAGE_READY";
+    public static final String PAGE_RENDER_FAILED = "PAGE_RENDER_FAILED";
     public static final String PARSING = "PARSING";
-    public static final String PARSE_PARTIAL_FAILED = "PARSE_PARTIAL_FAILED";
+    public static final String AI_PARSE_FAILED_REVIEW = "AI_PARSE_FAILED_REVIEW";
+    public static final String AI_PARSE_COMPLETE = "AI_PARSE_COMPLETE";
+    public static final String RAW_JSON_PROCESSING = "RAW_JSON_PROCESSING";
     public static final String PARSE_FAILED = "PARSE_FAILED";
     public static final String PENDING_CONFIRMATION = "PENDING_CONFIRMATION";
     public static final String CONFIRMED = "CONFIRMED";

@@ -1,6 +1,7 @@
+storage/
 target/
 backend/target/
-backend/storage/
+backend/storage/*
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/

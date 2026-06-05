@@ -21,7 +21,7 @@ public class ExamDocument extends BaseEntity {
     private Long fileSize;
     private String sha256;
     private String storagePath;
-    private String extractedText;
+    private Integer pageCount;
     private String status;
 }
 

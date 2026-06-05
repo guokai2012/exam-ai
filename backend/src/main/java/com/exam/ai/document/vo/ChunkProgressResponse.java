@@ -20,8 +20,8 @@ public record ChunkProgressResponse(
         Integer pending,
         @Schema(description = "处理中分块数")
         Integer processing,
-        @Schema(description = "超长分块数")
-        Integer oversized,
+        @Schema(description = "已跳过页数")
+        Integer skipped,
         @Schema(description = "最近错误信息")
         String latestErrorMessage
 ) {
