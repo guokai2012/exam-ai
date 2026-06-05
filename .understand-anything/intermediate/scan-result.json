@@ -1,0 +1,1617 @@
+{
+  "projectName": "Exam AI",
+  "projectDescription": "智能出题系统单仓库，包含 Spring Boot 后端服务和 Vue 3 + Vite + Element Plus 前端工程，围绕文档 AI 解析、题库管理、用户权限、菜单治理、系统配置和通知形成完整业务闭环。",
+  "languages": [
+    "CSS",
+    "HTML",
+    "JSON",
+    "Java",
+    "JavaScript",
+    "Markdown",
+    "SQL",
+    "Text",
+    "Vue",
+    "XML",
+    "YAML"
+  ],
+  "frameworks": [
+    "Spring Boot 3.5.x",
+    "Java 17",
+    "MyBatis-Plus",
+    "Spring Security",
+    "Redis",
+    "MySQL 8",
+    "Vue 3",
+    "Vite",
+    "Element Plus"
+  ],
+  "files": [
+    {
+      "path": ".env",
+      "language": "Text",
+      "sizeLines": 9,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".gitignore",
+      "language": "Text",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "Markdown",
+      "sizeLines": 252,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "backend/pom.xml",
+      "language": "XML",
+      "sizeLines": 145,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/controller/AuthController.java",
+      "language": "Java",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/dto/ChangePasswordRequest.java",
+      "language": "Java",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/dto/LoginRequest.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/dto/LogoutRequest.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/dto/RefreshRequest.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/dto/RegisterRequest.java",
+      "language": "Java",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/entity/SysRefreshToken.java",
+      "language": "Java",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/mapper/SysRefreshTokenMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/AuthService.java",
+      "language": "Java",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/CaptchaService.java",
+      "language": "Java",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/impl/AuthServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 321,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/impl/CaptchaServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/impl/RateLimitServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/service/RateLimitService.java",
+      "language": "Java",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/vo/CaptchaResponse.java",
+      "language": "Java",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/vo/CurrentUserResponse.java",
+      "language": "Java",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/auth/vo/TokenResponse.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/base/BaseEntity.java",
+      "language": "Java",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/AdminBootstrapRunner.java",
+      "language": "Java",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/AiAnalysisProperties.java",
+      "language": "Java",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/AuditMetaObjectHandler.java",
+      "language": "Java",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/DocumentProperties.java",
+      "language": "Java",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/MyBatisPlusConfig.java",
+      "language": "Java",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/OpenApiConfig.java",
+      "language": "Java",
+      "sizeLines": 42,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/PermissionBootstrapRunner.java",
+      "language": "Java",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/SecurityConfig.java",
+      "language": "Java",
+      "sizeLines": 68,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/SecurityProperties.java",
+      "language": "Java",
+      "sizeLines": 271,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/config/TaskContextConfig.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/exception/BusinessException.java",
+      "language": "Java",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/exception/GlobalExceptionHandler.java",
+      "language": "Java",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/common/result/ApiResponse.java",
+      "language": "Java",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/controller/DocumentController.java",
+      "language": "Java",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiAssembledQuestionItem.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiDocumentAssembleResult.java",
+      "language": "Java",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiPageAnalysisResult.java",
+      "language": "Java",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiPageFragment.java",
+      "language": "Java",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiQuestionItem.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/AiQuestionResult.java",
+      "language": "Java",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/dto/RetryFailedPagesRequest.java",
+      "language": "Java",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/AnalysisChunkStatus.java",
+      "language": "Java",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/AnalysisStatus.java",
+      "language": "Java",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/DocumentStatus.java",
+      "language": "Java",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/ExamDocument.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/ExamDocumentAnalysis.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/entity/ExamDocumentAnalysisChunk.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/mapper/ExamDocumentAnalysisChunkMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/mapper/ExamDocumentAnalysisMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/mapper/ExamDocumentMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/scheduler/DocumentRawJsonProcessScheduler.java",
+      "language": "Java",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/scheduler/PdfPageRenderScheduler.java",
+      "language": "Java",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/DocumentFileService.java",
+      "language": "Java",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/DocumentQuestionAssemblerClient.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/DocumentService.java",
+      "language": "Java",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/DocumentVisionRecognitionClient.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/impl/DocumentFileServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/impl/DocumentServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 950,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/impl/OpenAiDocumentQuestionAssemblerClient.java",
+      "language": "Java",
+      "sizeLines": 253,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/service/impl/OpenAiDocumentVisionRecognitionClient.java",
+      "language": "Java",
+      "sizeLines": 285,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/util/QuestionAnalysisParser.java",
+      "language": "Java",
+      "sizeLines": 252,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/AnalysisResponse.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/AnalysisSummary.java",
+      "language": "Java",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/ChunkProgressResponse.java",
+      "language": "Java",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/DocumentResponse.java",
+      "language": "Java",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/FailedPageResponse.java",
+      "language": "Java",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/document/vo/QuestionAnalysisResponse.java",
+      "language": "Java",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/ExamAiBackendApplication.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/controller/QuestionBankController.java",
+      "language": "Java",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/controller/QuestionCategoryController.java",
+      "language": "Java",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/dto/CreateQuestionCategoryRequest.java",
+      "language": "Java",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/dto/QuestionImportResult.java",
+      "language": "Java",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/dto/ReviewQuestionRequest.java",
+      "language": "Java",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/ExamQuestionBank.java",
+      "language": "Java",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/ExamQuestionCategory.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/ExamQuestionSource.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/ExamQuestionTag.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/ExamQuestionTagRelation.java",
+      "language": "Java",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/QuestionCategoryStatus.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/QuestionEvent.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/entity/QuestionState.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/mapper/ExamQuestionBankMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/mapper/ExamQuestionCategoryMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/mapper/ExamQuestionSourceMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/mapper/ExamQuestionTagMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/mapper/ExamQuestionTagRelationMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/scheduler/QuestionTaggingScheduler.java",
+      "language": "Java",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/impl/QuestionBankServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 653,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/impl/QuestionStateTransitionServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/impl/QuestionTaggingServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 166,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/QuestionBankService.java",
+      "language": "Java",
+      "sizeLines": 157,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/QuestionStateTransitionService.java",
+      "language": "Java",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/service/QuestionTaggingService.java",
+      "language": "Java",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/statemachine/QuestionStateMachineConfig.java",
+      "language": "Java",
+      "sizeLines": 61,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/util/QuestionStemNormalizer.java",
+      "language": "Java",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/vo/QuestionCategoryResponse.java",
+      "language": "Java",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/question/vo/QuestionResponse.java",
+      "language": "Java",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/ClientIp.java",
+      "language": "Java",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/ForcePasswordChangeFilter.java",
+      "language": "Java",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/JsonSecurityHandlers.java",
+      "language": "Java",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/JwtAuthenticationFilter.java",
+      "language": "Java",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/JwtClaims.java",
+      "language": "Java",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/JwtService.java",
+      "language": "Java",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/RedisKeys.java",
+      "language": "Java",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/TokenHashService.java",
+      "language": "Java",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/security/UserPrincipal.java",
+      "language": "Java",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/controller/NotificationController.java",
+      "language": "Java",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/controller/SystemConfigController.java",
+      "language": "Java",
+      "sizeLines": 68,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/dto/UpdateSystemConfigRequest.java",
+      "language": "Java",
+      "sizeLines": 22,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/entity/SysConfig.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/entity/SysNotification.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/mapper/SysConfigMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/mapper/SysNotificationMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/service/impl/NotificationServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/service/impl/SystemConfigServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 224,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/service/NotificationService.java",
+      "language": "Java",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/service/SystemConfigService.java",
+      "language": "Java",
+      "sizeLines": 52,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/vo/NotificationResponse.java",
+      "language": "Java",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/vo/SystemConfigResponse.java",
+      "language": "Java",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/system/vo/SystemConfigUpdateResult.java",
+      "language": "Java",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/controller/AdminMenuController.java",
+      "language": "Java",
+      "sizeLines": 149,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/controller/AdminPermissionController.java",
+      "language": "Java",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/controller/AdminRoleController.java",
+      "language": "Java",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/controller/AdminUserController.java",
+      "language": "Java",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/controller/MenuController.java",
+      "language": "Java",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/AdminCreateUserRequest.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/AdminUpdateUserRequest.java",
+      "language": "Java",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/ResetPasswordRequest.java",
+      "language": "Java",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/SaveMenuRequest.java",
+      "language": "Java",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/SaveRoleRequest.java",
+      "language": "Java",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/SyncMenuItemRequest.java",
+      "language": "Java",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/dto/SyncMenuRequest.java",
+      "language": "Java",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysMenu.java",
+      "language": "Java",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysPermission.java",
+      "language": "Java",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysRole.java",
+      "language": "Java",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysRolePermission.java",
+      "language": "Java",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysUser.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/SysUserRole.java",
+      "language": "Java",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/entity/UserStatus.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysMenuMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysPermissionMapper.java",
+      "language": "Java",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysRoleMapper.java",
+      "language": "Java",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysRolePermissionMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysUserMapper.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/mapper/SysUserRoleMapper.java",
+      "language": "Java",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/scheduler/PermissionScanScheduler.java",
+      "language": "Java",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/AdminPermissionService.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/AdminRoleService.java",
+      "language": "Java",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/AdminUserService.java",
+      "language": "Java",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/impl/AdminPermissionServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 671,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/impl/AdminRoleServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 174,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/impl/AdminUserServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 209,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/impl/MenuServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 577,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/impl/RolePermissionServiceImpl.java",
+      "language": "Java",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/MenuScanTokenService.java",
+      "language": "Java",
+      "sizeLines": 114,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/MenuService.java",
+      "language": "Java",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/service/RolePermissionService.java",
+      "language": "Java",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/ApiPathOptionResponse.java",
+      "language": "Java",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/MenuResponse.java",
+      "language": "Java",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/MenuScanTokenResponse.java",
+      "language": "Java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/MenuSyncResponse.java",
+      "language": "Java",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/PermissionResponse.java",
+      "language": "Java",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/PermissionScanResponse.java",
+      "language": "Java",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/RoleResponse.java",
+      "language": "Java",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/user/vo/UserResponse.java",
+      "language": "Java",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/util/CurrentUserUtils.java",
+      "language": "Java",
+      "sizeLines": 199,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/java/com/exam/ai/util/SystemUserModule.java",
+      "language": "Java",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/main/resources/application.yml",
+      "language": "YAML",
+      "sizeLines": 85,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260531162100__init_auth_schema.sql",
+      "language": "SQL",
+      "sizeLines": 168,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260531203600__document_analysis_schema.sql",
+      "language": "SQL",
+      "sizeLines": 200,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260531230800__admin_management_schema.sql",
+      "language": "SQL",
+      "sizeLines": 128,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260601134100__seed_super_admin.sql",
+      "language": "SQL",
+      "sizeLines": 37,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260601135900__restructure_navigation_menus.sql",
+      "language": "SQL",
+      "sizeLines": 77,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260601165900__permission_tree_and_scan.sql",
+      "language": "SQL",
+      "sizeLines": 80,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260601223000__base_entity_audit_logical_delete.sql",
+      "language": "SQL",
+      "sizeLines": 338,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260602093000__controller_scanned_permission_source.sql",
+      "language": "SQL",
+      "sizeLines": 62,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260602110000__menu_api_path_without_component.sql",
+      "language": "SQL",
+      "sizeLines": 76,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260602214000__menu_scan_sync_security.sql",
+      "language": "SQL",
+      "sizeLines": 93,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260603172000__home_menu_default_route.sql",
+      "language": "SQL",
+      "sizeLines": 56,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260604113000__drop_legacy_audit_columns.sql",
+      "language": "SQL",
+      "sizeLines": 191,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260605093000__pdf_page_analysis_chunks.sql",
+      "language": "SQL",
+      "sizeLines": 138,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260605110000__document_page_count_progress.sql",
+      "language": "SQL",
+      "sizeLines": 38,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/20260605114500__question_source_page_nos.sql",
+      "language": "SQL",
+      "sizeLines": 34,
+      "fileCategory": "data"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/document/service/DocumentFileServiceTest.java",
+      "language": "Java",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/document/service/DocumentServiceImplTransactionTest.java",
+      "language": "Java",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/document/service/OpenAiDocumentQuestionAssemblerClientTest.java",
+      "language": "Java",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/document/service/OpenAiDocumentVisionRecognitionClientTest.java",
+      "language": "Java",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/document/service/QuestionAnalysisParserTest.java",
+      "language": "Java",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/question/service/QuestionBankServiceTest.java",
+      "language": "Java",
+      "sizeLines": 166,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/question/service/QuestionStateTransitionServiceTest.java",
+      "language": "Java",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/question/service/QuestionStemNormalizerTest.java",
+      "language": "Java",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/security/JwtAuthenticationFilterTest.java",
+      "language": "Java",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/security/JwtServiceTest.java",
+      "language": "Java",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/security/TokenHashServiceTest.java",
+      "language": "Java",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/system/service/SystemConfigServiceTest.java",
+      "language": "Java",
+      "sizeLines": 140,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/user/service/AdminPermissionServiceImplTest.java",
+      "language": "Java",
+      "sizeLines": 350,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/user/service/MenuScanTokenServiceTest.java",
+      "language": "Java",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/user/service/MenuServiceImplTest.java",
+      "language": "Java",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/src/test/java/com/exam/ai/util/CurrentUserUtilsTest.java",
+      "language": "Java",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/20260531222300_auth-flow.md",
+      "language": "Markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531222400_document-analysis-flow.md",
+      "language": "Markdown",
+      "sizeLines": 79,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531222500_question-confirmation-flow.md",
+      "language": "Markdown",
+      "sizeLines": 47,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531222600_system-config-notification-flow.md",
+      "language": "Markdown",
+      "sizeLines": 47,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531232100_admin-user-management-flow.md",
+      "language": "Markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531232200_force-password-change-flow.md",
+      "language": "Markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260531232300_layout-navigation-flow.md",
+      "language": "Markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601140200_navigation-menu-restructure-flow.md",
+      "language": "Markdown",
+      "sizeLines": 64,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601172500_menu-management-flow.md",
+      "language": "Markdown",
+      "sizeLines": 74,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601172600_role-permission-management-flow.md",
+      "language": "Markdown",
+      "sizeLines": 54,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601195500_代码规范治理说明.md",
+      "language": "Markdown",
+      "sizeLines": 68,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601202800_当前用户上下文传播流程.md",
+      "language": "Markdown",
+      "sizeLines": 61,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601213000_功能闭环补齐流程.md",
+      "language": "Markdown",
+      "sizeLines": 63,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601215000_代码注释与常量治理流程.md",
+      "language": "Markdown",
+      "sizeLines": 53,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260601224500_基础实体与逻辑删除改造流程.md",
+      "language": "Markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/20260603172000_首页菜单流程.md",
+      "language": "Markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "frontend/index.html",
+      "language": "HTML",
+      "sizeLines": 13,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/package.json",
+      "language": "JSON",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/src/api/http.js",
+      "language": "JavaScript",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/App.vue",
+      "language": "Vue",
+      "sizeLines": 10,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/components/SideMenuNode.vue",
+      "language": "Vue",
+      "sizeLines": 42,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/layouts/AppLayout.vue",
+      "language": "Vue",
+      "sizeLines": 172,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/main.js",
+      "language": "JavaScript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/admin-menus/AdminMenusPage.vue",
+      "language": "Vue",
+      "sizeLines": 347,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/admin-menus/api.js",
+      "language": "JavaScript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/admin-menus/menuScanner.js",
+      "language": "JavaScript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/admin-permissions/AdminPermissionsPage.vue",
+      "language": "Vue",
+      "sizeLines": 83,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/admin-permissions/api.js",
+      "language": "JavaScript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/admin-roles/AdminRolesPage.vue",
+      "language": "Vue",
+      "sizeLines": 157,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/admin-roles/api.js",
+      "language": "JavaScript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/admin-users/AdminUsersPage.vue",
+      "language": "Vue",
+      "sizeLines": 346,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/admin-users/api.js",
+      "language": "JavaScript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/auth/api.js",
+      "language": "JavaScript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/auth/LoginPage.vue",
+      "language": "Vue",
+      "sizeLines": 106,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/auth/RegisterPage.vue",
+      "language": "Vue",
+      "sizeLines": 101,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/change-password/ChangePasswordPage.vue",
+      "language": "Vue",
+      "sizeLines": 92,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/documents/api.js",
+      "language": "JavaScript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/documents/DocumentsPage.vue",
+      "language": "Vue",
+      "sizeLines": 526,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/home/HomePage.vue",
+      "language": "Vue",
+      "sizeLines": 86,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/notifications/api.js",
+      "language": "JavaScript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/notifications/NotificationsPage.vue",
+      "language": "Vue",
+      "sizeLines": 96,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/profile/ProfilePage.vue",
+      "language": "Vue",
+      "sizeLines": 46,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/questions/api.js",
+      "language": "JavaScript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/questions/AvailableQuestionsPage.vue",
+      "language": "Vue",
+      "sizeLines": 200,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/questions/PendingConfirmQuestionsPage.vue",
+      "language": "Vue",
+      "sizeLines": 176,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/questions/QuestionDetailDialog.vue",
+      "language": "Vue",
+      "sizeLines": 64,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/modules/settings/themeSettings.js",
+      "language": "JavaScript",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/system-config/api.js",
+      "language": "JavaScript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/modules/system-config/SystemConfigPage.vue",
+      "language": "Vue",
+      "sizeLines": 63,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/src/router/index.js",
+      "language": "JavaScript",
+      "sizeLines": 255,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/shared/authToken.js",
+      "language": "JavaScript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/shared/constants.js",
+      "language": "JavaScript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/shared/formatters.js",
+      "language": "JavaScript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/shared/menuApiPath.js",
+      "language": "JavaScript",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/shared/theme.js",
+      "language": "JavaScript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "language": "CSS",
+      "sizeLines": 461,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/vite.config.js",
+      "language": "JavaScript",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "pom.xml",
+      "language": "XML",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "README.md",
+      "language": "Markdown",
+      "sizeLines": 102,
+      "fileCategory": "docs"
+    }
+  ],
+  "totalFiles": 260,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "large",
+  "importMap": {},
+  "stats": {
+    "filesScanned": 260,
+    "byCategory": {
+      "config": 22,
+      "docs": 18,
+      "code": 186,
+      "data": 15,
+      "markup": 19
+    },
+    "byLanguage": {
+      "Text": 2,
+      "Markdown": 18,
+      "XML": 2,
+      "Java": 181,
+      "YAML": 1,
+      "SQL": 15,
+      "HTML": 1,
+      "JSON": 1,
+      "JavaScript": 20,
+      "Vue": 18,
+      "CSS": 1
+    }
+  }
+}
