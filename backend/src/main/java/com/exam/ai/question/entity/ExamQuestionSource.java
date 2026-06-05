@@ -20,6 +20,7 @@ public class ExamQuestionSource extends BaseEntity {
     private Long documentId;
     private Long analysisId;
     private Long chunkId;
+    private String sourcePageNos;
     private BigDecimal confidence;
     private Integer sortOrder;
 }

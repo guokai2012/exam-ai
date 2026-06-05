@@ -41,6 +41,20 @@ public interface QuestionBankService {
      */
     public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, Long chunkId, int sortOrder, Long userId) throws JsonProcessingException;
     /**
+     * 执行当前业务步骤，并返回调用方需要的处理结果。
+     * @param item 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param documentId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param analysisId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param chunkId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param sourcePageNos 题目来源页码，跨页题按升序保存多个页码。
+     * @param sortOrder 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
+     * @return 封装后的业务处理结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当参数非法、资源不存在或业务状态不允许继续处理时抛出。
+     */
+    public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, Long chunkId,
+                                               List<Integer> sourcePageNos, int sortOrder, Long userId) throws JsonProcessingException;
+    /**
      * 查询或解析业务数据，返回前端或内部流程需要的结果。
      * @param categoryName 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。
      * @param userId 调用方传入的业务数据，方法会按场景用于校验、查询或状态变更。

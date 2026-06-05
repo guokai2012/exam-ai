@@ -40,19 +40,20 @@ class OpenAiDocumentVisionRecognitionClientTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("Authorization", "Bearer sk-test"))
                 .andExpect(jsonPath("$.response_format.type").value("json_schema"))
-                .andExpect(jsonPath("$.response_format.json_schema.name").value("document_page_questions"))
+                .andExpect(jsonPath("$.response_format.json_schema.name").value("document_page_fragments"))
                 .andExpect(jsonPath("$.response_format.json_schema.strict").value(true))
-                .andExpect(jsonPath("$.response_format.json_schema.schema.required[0]").value("questions"))
+                .andExpect(jsonPath("$.response_format.json_schema.schema.required[0]").value("pageNo"))
                 .andExpect(jsonPath("$.response_format.json_schema.schema.additionalProperties").value(false))
-                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.questions.type").value("array"))
-                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.questions.items.additionalProperties").value(false))
-                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.questions.items.properties.type.enum[0]").value("SINGLE_CHOICE"))
-                .andRespond(withSuccess("{\"choices\":[{\"message\":{\"content\":\"{\\\"questions\\\":[]}\"}}]}",
+                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.pageType.enum[0]").value("QUESTION"))
+                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.fragments.type").value("array"))
+                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.fragments.items.additionalProperties").value(false))
+                .andExpect(jsonPath("$.response_format.json_schema.schema.properties.fragments.items.properties.fragmentType.enum[0]").value("QUESTION_STEM"))
+                .andRespond(withSuccess("{\"choices\":[{\"message\":{\"content\":\"{\\\"pageNo\\\":1,\\\"pageType\\\":\\\"NO_QUESTION\\\",\\\"fragments\\\":[]}\"}}]}",
                         MediaType.APPLICATION_JSON));
 
         String result = client.recognizePage(pageImage, 1);
 
-        assertThat(result).isEqualTo("{\"questions\":[]}");
+        assertThat(result).contains("\"pageType\":\"NO_QUESTION\"");
         server.verify();
     }
 }

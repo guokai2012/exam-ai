@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.exam.ai.common.config.DocumentProperties;
 import com.exam.ai.common.exception.BusinessException;
+import com.exam.ai.document.dto.AiAssembledQuestionItem;
+import com.exam.ai.document.dto.AiDocumentAssembleResult;
+import com.exam.ai.document.dto.AiPageAnalysisResult;
 import com.exam.ai.document.dto.AiQuestionItem;
-import com.exam.ai.document.dto.AiQuestionResult;
 import com.exam.ai.document.dto.RetryFailedPagesRequest;
 import com.exam.ai.document.entity.AnalysisChunkStatus;
 import com.exam.ai.document.entity.AnalysisStatus;
@@ -17,6 +19,7 @@ import com.exam.ai.document.entity.ExamDocumentAnalysisChunk;
 import com.exam.ai.document.mapper.ExamDocumentAnalysisChunkMapper;
 import com.exam.ai.document.mapper.ExamDocumentAnalysisMapper;
 import com.exam.ai.document.mapper.ExamDocumentMapper;
+import com.exam.ai.document.service.DocumentQuestionAssemblerClient;
 import com.exam.ai.document.service.DocumentFileService;
 import com.exam.ai.document.service.DocumentService;
 import com.exam.ai.document.service.DocumentVisionRecognitionClient;
@@ -27,7 +30,6 @@ import com.exam.ai.document.vo.ChunkProgressResponse;
 import com.exam.ai.document.vo.DocumentResponse;
 import com.exam.ai.document.vo.FailedPageResponse;
 import com.exam.ai.document.vo.QuestionAnalysisResponse;
-import com.exam.ai.question.dto.QuestionImportResult;
 import com.exam.ai.question.entity.ExamQuestionSource;
 import com.exam.ai.question.mapper.ExamQuestionSourceMapper;
 import com.exam.ai.question.service.QuestionBankService;
@@ -44,7 +46,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -83,6 +87,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final QuestionBankService questionBankService;
     private final DocumentFileService fileService;
     private final DocumentVisionRecognitionClient visionRecognitionClient;
+    private final DocumentQuestionAssemblerClient questionAssemblerClient;
     private final QuestionAnalysisParser parser;
     private final SystemConfigService systemConfigService;
     private final NotificationService notificationService;
@@ -99,6 +104,7 @@ public class DocumentServiceImpl implements DocumentService {
      * @param questionBankService 题库导入和查询服务。
      * @param fileService PDF 文件保存服务。
      * @param visionRecognitionClient OpenAI-compatible 页图片识别客户端。
+     * @param questionAssemblerClient OpenAI-compatible 文档级题目合并客户端。
      * @param parser AI JSON 题目结果解析器。
      * @param systemConfigService 系统配置服务，用于读取单次页识别内部重试次数。
      * @param notificationService 站内通知服务。
@@ -112,6 +118,7 @@ public class DocumentServiceImpl implements DocumentService {
                                QuestionBankService questionBankService,
                                DocumentFileService fileService,
                                DocumentVisionRecognitionClient visionRecognitionClient,
+                               DocumentQuestionAssemblerClient questionAssemblerClient,
                                QuestionAnalysisParser parser,
                                SystemConfigService systemConfigService,
                                NotificationService notificationService,
@@ -124,6 +131,7 @@ public class DocumentServiceImpl implements DocumentService {
         this.questionBankService = questionBankService;
         this.fileService = fileService;
         this.visionRecognitionClient = visionRecognitionClient;
+        this.questionAssemblerClient = questionAssemblerClient;
         this.parser = parser;
         this.systemConfigService = systemConfigService;
         this.notificationService = notificationService;
@@ -551,14 +559,17 @@ public class DocumentServiceImpl implements DocumentService {
                     .eq(ExamDocumentAnalysisChunk::getAnalysisId, analysis.getId())
                     .eq(ExamDocumentAnalysisChunk::getStatus, AnalysisChunkStatus.SUCCESS)
                     .orderByAsc(ExamDocumentAnalysisChunk::getPageNo));
-            List<PageQuestions> pageQuestions = new ArrayList<>();
+            List<AiPageAnalysisResult> pageAnalyses = new ArrayList<>();
             for (ExamDocumentAnalysisChunk page : successPages) {
-                pageQuestions.add(new PageQuestions(page.getId(), parser.parse(page.getRawJson()).questions()));
+                pageAnalyses.add(parser.parsePageAnalysis(page.getRawJson()));
             }
-            importPageQuestions(document, analysis, pageQuestions);
+            String assembledRawJson = pageAnalyses.isEmpty() ? "{\"questions\":[]}" : questionAssemblerClient.assembleQuestions(pageAnalyses);
+            AiDocumentAssembleResult assembleResult = parser.parseAssembleResult(assembledRawJson);
+            importAssembledQuestions(document, analysis, successPages, assembleResult.questions());
             document.setStatus(DocumentStatus.PENDING_CONFIRMATION);
             documentMapper.updateById(document);
             analysis.setStatus(AnalysisStatus.SUCCESS);
+            analysis.setRawJson(assembledRawJson);
             analysis.setErrorMessage(null);
             analysisMapper.updateById(analysis);
         } catch (Exception ex) {
@@ -574,21 +585,67 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 将页级 raw_json 解析出的题目导入待确认题库。
+     * 将文档级合并后的完整题目导入待确认题库。
      *
      * @param document 文档实体。
      * @param analysis 分析批次。
-     * @param pageQuestions 每页题目集合。
+     * @param successPages 成功完成页级识别的页面任务。
+     * @param questions 文档级合并后的完整题目集合。
      * @throws JsonProcessingException 题目选项序列化失败时抛出。
      */
-    private void importPageQuestions(ExamDocument document, ExamDocumentAnalysis analysis, List<PageQuestions> pageQuestions)
+    private void importAssembledQuestions(ExamDocument document, ExamDocumentAnalysis analysis,
+                                          List<ExamDocumentAnalysisChunk> successPages,
+                                          List<AiAssembledQuestionItem> questions)
             throws JsonProcessingException {
-        int sortOrder = 1;
-        for (PageQuestions pageQuestion : pageQuestions) {
-            for (AiQuestionItem item : pageQuestion.questions()) {
-                questionBankService.importQuestion(item, document.getId(), analysis.getId(), pageQuestion.chunkId(), sortOrder++, document.getCreateId());
-            }
+        if (questions == null || questions.isEmpty()) {
+            return;
         }
+        Map<Integer, Long> chunkIdByPageNo = successPages.stream()
+                .collect(Collectors.toMap(ExamDocumentAnalysisChunk::getPageNo, ExamDocumentAnalysisChunk::getId, (left, right) -> left));
+        int sortOrder = 1;
+        for (AiAssembledQuestionItem question : questions) {
+            Long primaryChunkId = primaryChunkId(question.sourcePageNos(), chunkIdByPageNo);
+            questionBankService.importQuestion(toQuestionItem(question), document.getId(), analysis.getId(),
+                    primaryChunkId, question.sourcePageNos(), sortOrder++, document.getCreateId());
+        }
+    }
+
+    /**
+     * 获取跨页题目的主分片 ID，默认使用来源页码中的第一页。
+     *
+     * @param sourcePageNos 来源页码集合。
+     * @param chunkIdByPageNo 页码到 chunk ID 的映射。
+     * @return 主 chunk ID；无法匹配时返回 {@code null}。
+     */
+    private Long primaryChunkId(List<Integer> sourcePageNos, Map<Integer, Long> chunkIdByPageNo) {
+        if (sourcePageNos == null || sourcePageNos.isEmpty()) {
+            return null;
+        }
+        return sourcePageNos.stream()
+                .filter(chunkIdByPageNo::containsKey)
+                .sorted()
+                .map(chunkIdByPageNo::get)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 将文档级合并题目转换为现有题库入库 DTO。
+     *
+     * @param question 文档级合并题目。
+     * @return 题库入库 DTO。
+     */
+    private AiQuestionItem toQuestionItem(AiAssembledQuestionItem question) {
+        return new AiQuestionItem(
+                question.type(),
+                question.stem(),
+                question.options(),
+                question.standardAnswer(),
+                question.explanation(),
+                question.difficultyStars(),
+                question.confidence(),
+                question.categoryName()
+        );
     }
 
     /**
@@ -889,12 +946,4 @@ public class DocumentServiceImpl implements DocumentService {
                 .normalize();
     }
 
-    /**
-     * 页级题目集合。
-     *
-     * @param chunkId 页 chunk ID。
-     * @param questions 当前页识别题目。
-     */
-    private record PageQuestions(Long chunkId, List<AiQuestionItem> questions) {
-    }
 }

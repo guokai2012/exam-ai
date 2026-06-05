@@ -2,11 +2,15 @@ package com.exam.ai.question.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.exam.ai.common.exception.BusinessException;
+import com.exam.ai.document.dto.AiQuestionItem;
 import com.exam.ai.question.entity.ExamQuestionBank;
+import com.exam.ai.question.entity.ExamQuestionCategory;
+import com.exam.ai.question.entity.ExamQuestionSource;
 import com.exam.ai.question.entity.QuestionEvent;
 import com.exam.ai.question.entity.QuestionState;
 import com.exam.ai.question.mapper.ExamQuestionBankMapper;
@@ -23,6 +27,8 @@ import com.exam.ai.user.entity.SysUser;
 import com.exam.ai.user.mapper.SysUserMapper;
 import com.exam.ai.util.CurrentUserUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,6 +139,27 @@ class QuestionBankServiceTest {
                 (Callable<?>) () -> questionBankService.review(4L, new ReviewQuestionRequest(true, null, "通过"))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("无权访问");
+    }
+
+    @Test
+    void shouldSaveSortedSourcePageNosWhenImportQuestion() throws Exception {
+        AiQuestionItem item = new AiQuestionItem("SINGLE_CHOICE", "Java 是什么？", List.of("A. 语言"),
+                "A", "解析", 2, BigDecimal.valueOf(0.9), "Java 基础");
+        ExamQuestionCategory category = new ExamQuestionCategory();
+        category.setId(11L);
+        category.setCategoryName("Java 基础");
+        when(categoryMapper.selectOne(any())).thenReturn(category);
+        when(stemNormalizer.normalize("Java 是什么？")).thenReturn("Java 是什么？");
+        when(stemNormalizer.hash("Java 是什么？")).thenReturn("hash");
+        when(questionMapper.selectOne(any())).thenReturn(null);
+        when(objectMapper.writeValueAsString(List.of("A. 语言"))).thenReturn("[\"A. 语言\"]");
+
+        questionBankService.importQuestion(item, 1L, 2L, 100L, List.of(3, 1, 3, 2), 1, 9L);
+
+        ArgumentCaptor<ExamQuestionSource> captor = ArgumentCaptor.forClass(ExamQuestionSource.class);
+        verify(sourceMapper).insert(captor.capture());
+        assertThat(captor.getValue().getSourcePageNos()).isEqualTo("1,2,3");
+        assertThat(captor.getValue().getChunkId()).isEqualTo(100L);
     }
 }
 

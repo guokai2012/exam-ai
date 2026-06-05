@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,6 +130,25 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     @Transactional(rollbackFor = Exception.class)
     public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, Long chunkId, int sortOrder,
                                                Long userId) throws JsonProcessingException {
+        return importQuestion(item, documentId, analysisId, chunkId, null, sortOrder, userId);
+    }
+
+    /**
+     * 导入 AI 识别出的题目，并记录可选分片来源和跨页页码。
+     *
+     * @param item AI 返回的单题结构。
+     * @param documentId 来源文档 ID。
+     * @param analysisId 文档分析批次 ID。
+     * @param chunkId 文档分片 ID，整篇分析场景可为空。
+     * @param sourcePageNos 来源页码集合。
+     * @param sortOrder 题目在分析结果中的顺序。
+     * @param userId 题目归属用户 ID。
+     * @return 题目入库结果，包含分类、题目、来源和是否新建。
+     * @throws JsonProcessingException 当题目选项无法序列化为 JSON 时抛出。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public QuestionImportResult importQuestion(AiQuestionItem item, Long documentId, Long analysisId, Long chunkId,
+                                               List<Integer> sourcePageNos, int sortOrder, Long userId) throws JsonProcessingException {
         ExamQuestionCategory category = findOrCreateCategory(item.categoryName(), userId);
         String normalizedStem = stemNormalizer.normalize(item.stem());
         String stemHash = stemNormalizer.hash(normalizedStem);
@@ -163,6 +183,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         source.setDocumentId(documentId);
         source.setAnalysisId(analysisId);
         source.setChunkId(chunkId);
+        source.setSourcePageNos(formatSourcePageNos(sourcePageNos));
         source.setConfidence(item.confidence());
         source.setSortOrder(sortOrder);
         sourceMapper.insert(source);
@@ -569,6 +590,27 @@ public class QuestionBankServiceImpl implements QuestionBankService {
      */
     private int safeRetryCount(ExamQuestionBank question) {
         return question.getTagRetryCount() == null ? 0 : question.getTagRetryCount();
+    }
+
+    /**
+     * 将来源页码格式化为逗号分隔字符串，便于追溯跨页题目来源。
+     *
+     * @param sourcePageNos 来源页码集合。
+     * @return 升序去重后的页码字符串。
+     */
+    private String formatSourcePageNos(List<Integer> sourcePageNos) {
+        if (sourcePageNos == null || sourcePageNos.isEmpty()) {
+            return null;
+        }
+        String value = sourcePageNos.stream()
+                .filter(Objects::nonNull)
+                .filter(pageNo -> pageNo > 0)
+                .distinct()
+                .sorted()
+                .map(String::valueOf)
+                .reduce((left, right) -> left + "," + right)
+                .orElse(null);
+        return value == null || value.isBlank() ? null : value;
     }
 
     /**
