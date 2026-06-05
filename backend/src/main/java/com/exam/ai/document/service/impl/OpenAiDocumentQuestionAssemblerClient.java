@@ -20,6 +20,7 @@ public class OpenAiDocumentQuestionAssemblerClient implements DocumentQuestionAs
 
     private static final String PLACEHOLDER_API_KEY = "sk-placeholder";
     private static final int DEFAULT_MAX_COMPLETION_TOKENS = 8192;
+    private static final double DEFAULT_TEMPERATURE = 0.7;
     private static final String RESPONSE_FORMAT_TYPE = "json_schema";
     private static final String RESPONSE_SCHEMA_NAME = "document_assembled_questions";
     private static final String RESPONSE_EMPTY_MESSAGE = "AI 文档合并结果为空";
@@ -79,6 +80,8 @@ public class OpenAiDocumentQuestionAssemblerClient implements DocumentQuestionAs
                         "content", ASSEMBLE_PROMPT + "\n页级片段 JSON：\n" + pageJson
                 )),
                 "max_tokens", DEFAULT_MAX_COMPLETION_TOKENS,
+                "temperature", DEFAULT_TEMPERATURE,
+                "extra_body", extraBody(),
                 "response_format", responseFormat()
         );
         try {
@@ -137,6 +140,18 @@ public class OpenAiDocumentQuestionAssemblerClient implements DocumentQuestionAs
                         "strict", true,
                         "schema", assembleResultSchema()
                 )
+        );
+    }
+
+    /**
+     * 构造 MiniMax M3 OpenAI-compatible 扩展参数，关闭深度思考输出。
+     *
+     * @return Chat Completions {@code extra_body} 请求参数。
+     */
+    private Map<String, Object> extraBody() {
+        return Map.of(
+                "thinking", Map.of("type", "disabled"),
+                "reasoning_split", false
         );
     }
 

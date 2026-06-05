@@ -24,6 +24,7 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
 
     private static final String PLACEHOLDER_API_KEY = "sk-placeholder";
     private static final int DEFAULT_MAX_COMPLETION_TOKENS = 4096;
+    private static final double DEFAULT_TEMPERATURE = 0.7;
     private static final String IMAGE_MIME_TYPE = "image/png";
     private static final String RESPONSE_FORMAT_TYPE = "json_schema";
     private static final String RESPONSE_SCHEMA_NAME = "document_page_fragments";
@@ -84,6 +85,8 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
                         )
                 )),
                 "max_tokens", DEFAULT_MAX_COMPLETION_TOKENS,
+                "temperature", DEFAULT_TEMPERATURE,
+                "extra_body", extraBody(),
                 "response_format", responseFormat()
         );
         try {
@@ -143,6 +146,18 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
                         "strict", true,
                         "schema", pageAnalysisSchema()
                 )
+        );
+    }
+
+    /**
+     * 构造 MiniMax M3 OpenAI-compatible 扩展参数，关闭深度思考输出。
+     *
+     * @return Chat Completions {@code extra_body} 请求参数。
+     */
+    private Map<String, Object> extraBody() {
+        return Map.of(
+                "thinking", Map.of("type", "disabled"),
+                "reasoning_split", false
         );
     }
 

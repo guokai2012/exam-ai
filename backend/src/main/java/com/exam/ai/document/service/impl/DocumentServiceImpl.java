@@ -216,14 +216,13 @@ public class DocumentServiceImpl implements DocumentService {
      * 按页执行 PDF AI 识别。
      *
      * <p>该方法只写页级 raw_json，不直接生成题目；文档进入 AI_PARSE_COMPLETE 后再由后处理定时任务
-     * 统一处理 raw_json。</p>
+     * 统一处理 raw_json。页级识别不使用外层声明式事务，避免单页失败或后续状态刷新异常回滚已成功页结果。</p>
      *
      * @param documentId 文档 ID。
      * @return 最新分析状态和页进度。
      * @throws BusinessException 文档不存在、无权访问或页面图片未准备完成时抛出。
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public AnalysisResponse analyze(Long documentId) {
         ExamDocument document = requireVisibleDocument(documentId);
         ensureAnalyzable(document);
@@ -284,7 +283,6 @@ public class DocumentServiceImpl implements DocumentService {
      * @throws BusinessException 文档不存在、无权访问、状态不允许或页码非法时抛出。
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public AnalysisResponse retryFailedPages(Long documentId, RetryFailedPagesRequest request) {
         ExamDocument document = requireVisibleDocument(documentId);
         if (!DocumentStatus.AI_PARSE_FAILED_REVIEW.equals(document.getStatus())) {
