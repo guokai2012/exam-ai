@@ -25,6 +25,8 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
     private static final String PLACEHOLDER_API_KEY = "sk-placeholder";
     private static final int DEFAULT_MAX_COMPLETION_TOKENS = 4096;
     private static final String IMAGE_MIME_TYPE = "image/png";
+    private static final String RESPONSE_FORMAT_TYPE = "json_schema";
+    private static final String RESPONSE_SCHEMA_NAME = "document_page_questions";
     private static final String RESPONSE_EMPTY_MESSAGE = "AI 页面识别结果为空";
     private static final String API_KEY_MISSING_MESSAGE = "AI API Key 未配置";
     private static final String PAGE_PROMPT = """
@@ -80,7 +82,8 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
                                 Map.of("type", "image_url", "image_url", Map.of("url", dataUrl))
                         )
                 )),
-                "max_tokens", DEFAULT_MAX_COMPLETION_TOKENS
+                "max_tokens", DEFAULT_MAX_COMPLETION_TOKENS,
+                "response_format", responseFormat()
         );
         try {
             Map<?, ?> response = restClient.post()
@@ -124,6 +127,71 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
         } catch (IOException ex) {
             throw BusinessException.badRequest("页面图片读取失败");
         }
+    }
+
+    /**
+     * 构造 OpenAI Structured Outputs 配置，要求模型严格返回题目 JSON 结构。
+     *
+     * @return Chat Completions {@code response_format} 请求参数。
+     */
+    private Map<String, Object> responseFormat() {
+        return Map.of(
+                "type", RESPONSE_FORMAT_TYPE,
+                "json_schema", Map.of(
+                        "name", RESPONSE_SCHEMA_NAME,
+                        "strict", true,
+                        "schema", questionResultSchema()
+                )
+        );
+    }
+
+    /**
+     * 构造页级题目识别结果 JSON Schema。
+     *
+     * @return 严格结构化输出使用的 JSON Schema。
+     */
+    private Map<String, Object> questionResultSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "required", List.of("questions"),
+                "properties", Map.of(
+                        "questions", Map.of(
+                                "type", "array",
+                                "items", questionItemSchema()
+                        )
+                )
+        );
+    }
+
+    /**
+     * 构造单题识别结果 JSON Schema。
+     *
+     * @return 单题对象 JSON Schema。
+     */
+    private Map<String, Object> questionItemSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "required", List.of("type", "stem", "options", "standardAnswer", "explanation",
+                        "difficultyStars", "confidence", "categoryName"),
+                "properties", Map.of(
+                        "type", Map.of(
+                                "type", "string",
+                                "enum", List.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER")
+                        ),
+                        "stem", Map.of("type", "string"),
+                        "options", Map.of(
+                                "type", "array",
+                                "items", Map.of("type", "string")
+                        ),
+                        "standardAnswer", Map.of("type", "string"),
+                        "explanation", Map.of("type", "string"),
+                        "difficultyStars", Map.of("type", "integer"),
+                        "confidence", Map.of("type", "number"),
+                        "categoryName", Map.of("type", "string")
+                )
+        );
     }
 
     /**
