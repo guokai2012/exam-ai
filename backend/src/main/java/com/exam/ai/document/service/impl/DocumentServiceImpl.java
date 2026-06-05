@@ -472,6 +472,8 @@ public class DocumentServiceImpl implements DocumentService {
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 String rawJson = visionRecognitionClient.recognizePage(Path.of(page.getPageImagePath()), page.getPageNo());
+                // AI 返回内容必须先通过页级结构校验，避免不合规 raw_json 被标记为成功并在文档后处理阶段拖垮整篇文档。
+                parser.parsePageAnalysis(rawJson, page.getPageNo());
                 page.setRawJson(rawJson);
                 page.setStatus(AnalysisChunkStatus.SUCCESS);
                 page.setErrorMessage(null);

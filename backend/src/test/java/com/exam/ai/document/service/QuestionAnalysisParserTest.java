@@ -64,6 +64,54 @@ class QuestionAnalysisParserTest {
     }
 
     @Test
+    void parsesPageAnalysisWithExpectedPageNo() {
+        String json = """
+                {"pageNo":4,"pageType":"MIXED","fragments":[{"pageNo":4,"fragmentType":"MIXED","questionNo":"1","stemFragment":"题干","options":[],"answerFragment":"答案","explanationFragment":"解析","complete":true,"continuesPreviousQuestion":false}]}
+                """;
+
+        AiPageAnalysisResult result = parser.parsePageAnalysis(json, 4);
+
+        assertThat(result.pageNo()).isEqualTo(4);
+        assertThat(result.fragments().get(0).pageNo()).isEqualTo(4);
+    }
+
+    @Test
+    void rejectsPageAnalysisWithoutPageNo() {
+        String json = """
+                {"pageType":"NO_QUESTION","fragments":[]}
+                """;
+
+        assertThatThrownBy(() -> parser.parsePageAnalysis(json, 1)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void rejectsPageAnalysisWhenPageNoMismatchExpectedPageNo() {
+        String json = """
+                {"pageNo":5,"pageType":"NO_QUESTION","fragments":[]}
+                """;
+
+        assertThatThrownBy(() -> parser.parsePageAnalysis(json, 4)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void rejectsPageAnalysisWhenFragmentPageNoMismatchExpectedPageNo() {
+        String json = """
+                {"pageNo":4,"pageType":"MIXED","fragments":[{"pageNo":5,"fragmentType":"MIXED","questionNo":"1","stemFragment":"题干","options":[],"answerFragment":"答案","explanationFragment":"解析","complete":true,"continuesPreviousQuestion":false}]}
+                """;
+
+        assertThatThrownBy(() -> parser.parsePageAnalysis(json, 4)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void rejectsLegacyPageAnalysisTypeContentFormat() {
+        String json = """
+                {"pageType":"MIXED","fragments":[{"type":"QUESTION","content":"题目文本"}]}
+                """;
+
+        assertThatThrownBy(() -> parser.parsePageAnalysis(json, 1)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
     void parsesEmptyAssembleResult() {
         String json = """
                 {"questions":[]}

@@ -10,6 +10,7 @@ import com.exam.ai.document.dto.AiQuestionResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
@@ -63,6 +64,29 @@ public class QuestionAnalysisParser {
             String json = extractJson(rawJson);
             AiPageAnalysisResult result = objectMapper.readValue(json, AiPageAnalysisResult.class);
             validatePageAnalysis(result);
+            return result;
+        } catch (Exception ex) {
+            throw BusinessException.badRequest("AI 页级分析结果格式不合法");
+        }
+    }
+
+    /**
+     * 解析 AI 单页分析结果，并校验返回页码必须与当前 chunk 页码一致。
+     *
+     * <p>该方法用于页级识别成功落库前的强校验。只有当顶层 {@code pageNo} 和每个片段的
+     * {@code pageNo} 都等于当前 PDF 页码时，调用方才允许将 raw_json 标记为成功。</p>
+     *
+     * @param rawJson AI 单页分析 JSON。
+     * @param expectedPageNo 当前 chunk 对应的 PDF 页码，从 1 开始。
+     * @return 单页分析结果。
+     * @throws com.exam.ai.common.exception.BusinessException 当 JSON 格式、页面类型或页码不一致时抛出。
+     */
+    public AiPageAnalysisResult parsePageAnalysis(String rawJson, Integer expectedPageNo) {
+        try {
+            String json = extractJson(rawJson);
+            AiPageAnalysisResult result = objectMapper.readValue(json, AiPageAnalysisResult.class);
+            validatePageAnalysis(result);
+            validateExpectedPageNo(result, expectedPageNo);
             return result;
         } catch (Exception ex) {
             throw BusinessException.badRequest("AI 页级分析结果格式不合法");
@@ -137,6 +161,26 @@ public class QuestionAnalysisParser {
             }
             if (fragment.options() == null || fragment.complete() == null || fragment.continuesPreviousQuestion() == null) {
                 throw BusinessException.badRequest("AI 页级片段缺少必要字段");
+            }
+        }
+    }
+
+    /**
+     * 校验 AI 返回页码与当前处理页一致，避免模型串页导致来源页码与 chunk 关联错乱。
+     *
+     * @param result AI 页级分析结果。
+     * @param expectedPageNo 当前 chunk 对应的 PDF 页码。
+     */
+    private void validateExpectedPageNo(AiPageAnalysisResult result, Integer expectedPageNo) {
+        if (expectedPageNo == null || expectedPageNo < 1) {
+            throw BusinessException.badRequest("当前页码不合法");
+        }
+        if (!Objects.equals(result.pageNo(), expectedPageNo)) {
+            throw BusinessException.badRequest("AI 页级分析页码与当前页不一致");
+        }
+        for (AiPageFragment fragment : result.fragments()) {
+            if (!Objects.equals(fragment.pageNo(), expectedPageNo)) {
+                throw BusinessException.badRequest("AI 页级片段页码与当前页不一致");
             }
         }
     }

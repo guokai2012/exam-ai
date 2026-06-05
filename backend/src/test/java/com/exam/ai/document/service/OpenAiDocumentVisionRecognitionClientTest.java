@@ -1,6 +1,7 @@
 package com.exam.ai.document.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
@@ -40,6 +41,9 @@ class OpenAiDocumentVisionRecognitionClientTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("Authorization", "Bearer sk-test"))
                 .andExpect(jsonPath("$.temperature").value(0.7))
+                .andExpect(jsonPath("$.messages[0].content[0].text", containsString("正向示例")))
+                .andExpect(jsonPath("$.messages[0].content[0].text", containsString("反向示例")))
+                .andExpect(jsonPath("$.messages[0].content[0].text", containsString("禁止使用 type、content、pageNumber、title、id")))
                 .andExpect(jsonPath("$.extra_body.thinking.type").value("disabled"))
                 .andExpect(jsonPath("$.extra_body.reasoning_split").value(false))
                 .andExpect(jsonPath("$.response_format.type").value("json_schema"))

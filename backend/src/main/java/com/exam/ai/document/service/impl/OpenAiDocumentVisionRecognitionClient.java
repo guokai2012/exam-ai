@@ -37,6 +37,29 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
             如果当前页只有答案或详细解析，pageType 使用 ANSWER_EXPLANATION，continuesPreviousQuestion 为 true。
             如果当前页没有题目、答案或解析，pageType 使用 NO_QUESTION，fragments 返回空数组。
             对图片、表格、公式题，请在 stemFragment 或 explanationFragment 中用文字说明视觉内容。
+            所有字段必须严格符合 JSON Schema：顶层必须有 pageNo、pageType、fragments；每个片段必须有 pageNo、fragmentType、questionNo、stemFragment、options、answerFragment、explanationFragment、complete、continuesPreviousQuestion。
+            没有内容的字符串字段必须返回空字符串 ""，没有选项必须返回空数组 []，不要省略必填字段。
+            正向示例：
+            {
+              "pageNo": 3,
+              "pageType": "MIXED",
+              "fragments": [
+                {
+                  "pageNo": 3,
+                  "fragmentType": "MIXED",
+                  "questionNo": "1",
+                  "stemFragment": "Java 线程池如何顺序执行任务？",
+                  "options": [],
+                  "answerFragment": "可使用单线程线程池或在提交侧保证任务依赖顺序。",
+                  "explanationFragment": "单线程线程池天然按队列顺序执行；复杂场景可通过 CompletableFuture 串联任务。",
+                  "complete": true,
+                  "continuesPreviousQuestion": false
+                }
+              ]
+            }
+            反向示例，以下格式禁止返回：
+            {"pageType":"MIXED","pageNumber":3,"fragments":[{"type":"QUESTION","content":"题目文本","title":"标题","id":"q1"}]}
+            禁止使用 type、content、pageNumber、title、id 等非 Schema 字段，禁止缺少 pageNo，禁止用 fragmentType 之外的片段类型字段。
             只返回 JSON，不要 Markdown，不要代码块。
             """;
 
@@ -49,9 +72,9 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
      * 构造 OpenAI-compatible 视觉识别客户端。
      *
      * @param restClientBuilder Spring RestClient 构建器。
-     * @param baseUrl Spring AI OpenAI-compatible 基础地址。
-     * @param apiKey Spring AI OpenAI-compatible API Key。
-     * @param modelName Spring AI OpenAI-compatible 模型名。
+     * @param baseUrl           Spring AI OpenAI-compatible 基础地址。
+     * @param apiKey            Spring AI OpenAI-compatible API Key。
+     * @param modelName         Spring AI OpenAI-compatible 模型名。
      */
     public OpenAiDocumentVisionRecognitionClient(RestClient.Builder restClientBuilder,
                                                  @Value("${spring.ai.openai.base-url:https://api.openai.com}") String baseUrl,
@@ -67,7 +90,7 @@ public class OpenAiDocumentVisionRecognitionClient implements DocumentVisionReco
      * 调用 OpenAI-compatible 多模态接口识别单页图片。
      *
      * @param pageImagePath PDF 页渲染后的图片本地路径。
-     * @param pageNo 页码，从 1 开始，用于提示模型和排查失败。
+     * @param pageNo        页码，从 1 开始，用于提示模型和排查失败。
      * @return 模型返回的原始 JSON 字符串。
      * @throws BusinessException 当 API Key 缺失、图片读取失败、模型调用失败或响应为空时抛出。
      */
