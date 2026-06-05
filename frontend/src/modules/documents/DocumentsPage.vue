@@ -77,6 +77,38 @@
               :status="renderProgressStatus(activeDocument)"
             />
           </div>
+          <div v-if="showAiAnalysisProgress(activeDocument)" class="render-progress-panel ai-progress-panel">
+            <div class="render-progress-meta">
+              <strong>{{ aiAnalysisProgressTitle(activeDocument) }}</strong>
+              <span>{{ aiAnalysisPageLabel(activeDocument) }}</span>
+            </div>
+            <el-progress
+              :percentage="aiAnalysisProgressPercentage(activeDocument)"
+              :status="aiAnalysisProgressStatus(activeDocument)"
+            />
+            <div v-if="aiChunkProgress(activeDocument)" class="analysis-progress-detail">
+              <el-tag type="success">成功 {{ aiChunkProgress(activeDocument).success || 0 }}</el-tag>
+              <el-tag v-if="aiChunkProgress(activeDocument).failed" type="danger">
+                失败 {{ aiChunkProgress(activeDocument).failed }}
+              </el-tag>
+              <el-tag v-if="aiChunkProgress(activeDocument).skipped" type="info">
+                已跳过 {{ aiChunkProgress(activeDocument).skipped }}
+              </el-tag>
+              <el-tag v-if="aiChunkProgress(activeDocument).processing" type="warning">
+                处理中 {{ aiChunkProgress(activeDocument).processing }}
+              </el-tag>
+              <el-tag v-if="aiChunkProgress(activeDocument).pending" type="info">
+                待处理 {{ aiChunkProgress(activeDocument).pending }}
+              </el-tag>
+            </div>
+            <el-alert
+              v-if="aiChunkProgress(activeDocument)?.latestErrorMessage"
+              class="inline-alert"
+              :title="aiChunkProgress(activeDocument).latestErrorMessage"
+              type="warning"
+              :closable="false"
+            />
+          </div>
           <el-descriptions class="detail-descriptions" :column="2" border>
             <el-descriptions-item label="文档 ID">{{ activeDocument.id }}</el-descriptions-item>
             <el-descriptions-item label="上传人">{{ activeDocument.createId }}</el-descriptions-item>
@@ -172,8 +204,19 @@ const activeDocument = ref(null)
 const analysis = ref(null)
 const contentPreview = ref('')
 const pagination = ref({ page: PAGE_DEFAULTS.page, size: PAGE_DEFAULTS.documentSize, total: 0 })
-const RENDER_POLL_INTERVAL = 3000
-let renderPollingTimer = null
+const PROGRESS_POLL_INTERVAL = 3000
+const RENDER_POLLING_STATUSES = ['UPLOADED', 'PAGE_RENDERING']
+const ANALYSIS_POLLING_STATUSES = ['PARSING', 'AI_PARSE_COMPLETE', 'RAW_JSON_PROCESSING']
+const ANALYSIS_PROGRESS_STATUSES = [
+  'PARSING',
+  'AI_PARSE_COMPLETE',
+  'RAW_JSON_PROCESSING',
+  'AI_PARSE_FAILED_REVIEW',
+  'PARSE_FAILED',
+  'PENDING_CONFIRMATION',
+  'CONFIRMED'
+]
+let progressPollingTimer = null
 
 function selectFile(uploadFile) {
   selectedFile.value = uploadFile.raw || null
@@ -188,7 +231,7 @@ async function loadDocuments() {
     documents.value = result?.records || []
     pagination.value.total = Number(result?.total || 0)
     syncActiveDocumentFromList()
-    scheduleRenderPolling()
+    scheduleProgressPolling()
   } catch (error) {
     ElMessage.error(error.message || '文档列表加载失败')
   }
@@ -207,7 +250,7 @@ async function submitUpload() {
     selectedFile.value = null
     ElMessage.success('上传成功')
     await loadDocuments()
-    scheduleRenderPolling()
+    scheduleProgressPolling()
   } catch (error) {
     ElMessage.error(error.message || '上传失败')
   } finally {
@@ -228,11 +271,12 @@ async function selectDocument(doc) {
     } catch {
       analysis.value = null
     }
-    scheduleRenderPolling()
+    syncActiveAnalysisFromDocument()
+    scheduleProgressPolling()
   } catch {
     analysis.value = null
     activeDocument.value = doc
-    scheduleRenderPolling()
+    scheduleProgressPolling()
   }
 }
 
@@ -263,55 +307,67 @@ async function loadContent(activeNames) {
  */
 async function startAnalyze() {
   if (!activeDocument.value) return
+  const documentId = activeDocument.value.id
   analyzing.value = true
+  activeDocument.value = {
+    ...activeDocument.value,
+    status: 'PARSING',
+    latestAnalysis: activeDocument.value.latestAnalysis
+      ? { ...activeDocument.value.latestAnalysis, status: 'PROCESSING' }
+      : activeDocument.value.latestAnalysis
+  }
+  syncDocumentInList(activeDocument.value)
+  scheduleProgressPolling()
   try {
-    analysis.value = await analyzeDocument(activeDocument.value.id)
+    analysis.value = await analyzeDocument(documentId)
     ElMessage.success('分析完成')
-    activeDocument.value = await getDocumentDetail(activeDocument.value.id)
+    activeDocument.value = await getDocumentDetail(documentId)
+    syncActiveAnalysisFromDocument()
     await loadDocuments()
   } catch (error) {
     ElMessage.error(error.message || '分析失败')
   } finally {
     analyzing.value = false
-    scheduleRenderPolling()
+    scheduleProgressPolling()
   }
 }
 
 /**
- * 当前文档处于页图片生成阶段时，启用 3 秒轮询以刷新真实页级进度。
+ * 当前文档处于页图片生成或 AI 页级解析阶段时，启用 3 秒轮询刷新真实进度。
  */
-function scheduleRenderPolling() {
-  stopRenderPolling()
-  if (!isRenderPollingStatus(activeDocument.value?.status)) return
-  renderPollingTimer = window.setInterval(refreshActiveDocumentProgress, RENDER_POLL_INTERVAL)
+function scheduleProgressPolling() {
+  stopProgressPolling()
+  if (!isProgressPollingStatus(activeDocument.value?.status)) return
+  progressPollingTimer = window.setInterval(refreshActiveDocumentProgress, PROGRESS_POLL_INTERVAL)
 }
 
 /**
- * 清理页图片分片进度轮询，避免组件卸载或状态结束后继续请求。
+ * 清理文档进度轮询，避免组件卸载、切换文档或状态结束后继续请求。
  */
-function stopRenderPolling() {
-  if (!renderPollingTimer) return
-  window.clearInterval(renderPollingTimer)
-  renderPollingTimer = null
+function stopProgressPolling() {
+  if (!progressPollingTimer) return
+  window.clearInterval(progressPollingTimer)
+  progressPollingTimer = null
 }
 
 /**
- * 刷新当前文档详情和列表状态，确保进度条页数与后端最新分片保持一致。
+ * 刷新当前文档详情和列表状态，确保分片和 AI 页级解析进度与后端保持一致。
  */
 async function refreshActiveDocumentProgress() {
   if (!activeDocument.value) {
-    stopRenderPolling()
+    stopProgressPolling()
     return
   }
   try {
     activeDocument.value = await getDocumentDetail(activeDocument.value.id)
-    await loadDocuments()
-    if (!isRenderPollingStatus(activeDocument.value.status)) {
-      stopRenderPolling()
+    syncActiveAnalysisFromDocument()
+    syncDocumentInList(activeDocument.value)
+    if (!isProgressPollingStatus(activeDocument.value.status)) {
+      stopProgressPolling()
     }
   } catch (error) {
-    stopRenderPolling()
-    ElMessage.error(error.message || '文档分片进度刷新失败')
+    stopProgressPolling()
+    ElMessage.error(error.message || '文档进度刷新失败')
   }
 }
 
@@ -325,8 +381,44 @@ function syncActiveDocumentFromList() {
   activeDocument.value = { ...activeDocument.value, ...latestDocument }
 }
 
+/**
+ * 用当前详情接口返回的最新分析摘要同步右侧分析面板的页级进度。
+ */
+function syncActiveAnalysisFromDocument() {
+  const latest = activeDocument.value?.latestAnalysis
+  if (!latest) return
+  const summary = {
+    id: latest.id,
+    documentId: activeDocument.value.id,
+    status: latest.status,
+    modelName: latest.modelName,
+    errorMessage: latest.errorMessage,
+    chunkProgress: latest.chunkProgress,
+    createdAt: latest.createdAt,
+    questions: analysis.value?.questions || []
+  }
+  analysis.value = analysis.value ? { ...analysis.value, ...summary } : summary
+}
+
+/**
+ * 将详情轮询拿到的当前文档轻量同步到左侧列表，避免额外频繁请求列表接口。
+ */
+function syncDocumentInList(document) {
+  const index = documents.value.findIndex((doc) => doc.id === document?.id)
+  if (index < 0) return
+  documents.value[index] = { ...documents.value[index], ...document }
+}
+
 function isRenderPollingStatus(status) {
-  return ['UPLOADED', 'PAGE_RENDERING'].includes(status)
+  return RENDER_POLLING_STATUSES.includes(status)
+}
+
+function isAnalysisPollingStatus(status) {
+  return ANALYSIS_POLLING_STATUSES.includes(status)
+}
+
+function isProgressPollingStatus(status) {
+  return isRenderPollingStatus(status) || isAnalysisPollingStatus(status)
 }
 
 function showRenderProgress(doc) {
@@ -366,7 +458,68 @@ function renderProgressTitle(doc) {
   }[doc?.status] || '文档分片进度'
 }
 
+function showAiAnalysisProgress(doc) {
+  return ANALYSIS_PROGRESS_STATUSES.includes(doc?.status)
+}
+
+function aiChunkProgress(doc) {
+  return doc?.latestAnalysis?.chunkProgress || analysis.value?.chunkProgress || null
+}
+
+function aiAnalysisTotalPageCount(doc) {
+  const progress = aiChunkProgress(doc)
+  return Number(doc?.pageCount || progress?.total || 0)
+}
+
+function aiProcessedPageCount(doc) {
+  const total = aiAnalysisTotalPageCount(doc)
+  if (['AI_PARSE_COMPLETE', 'RAW_JSON_PROCESSING', 'PENDING_CONFIRMATION', 'CONFIRMED'].includes(doc?.status)) {
+    return total
+  }
+  const progress = aiChunkProgress(doc)
+  if (!progress) return 0
+  return Number(progress.success || 0) + Number(progress.failed || 0) + Number(progress.skipped || 0)
+}
+
+function aiAnalysisPageLabel(doc) {
+  const progress = aiChunkProgress(doc)
+  const total = aiAnalysisTotalPageCount(doc)
+  const processing = Number(progress?.processing || 0)
+  const suffix = processing > 0 ? `，处理中 ${processing} 页` : ''
+  return `${aiProcessedPageCount(doc)} / ${total || '-'} 页${suffix}`
+}
+
+function aiAnalysisProgressPercentage(doc) {
+  if (['AI_PARSE_COMPLETE', 'RAW_JSON_PROCESSING', 'PENDING_CONFIRMATION', 'CONFIRMED'].includes(doc?.status)) {
+    return 100
+  }
+  const total = aiAnalysisTotalPageCount(doc)
+  if (total <= 0) return 0
+  return Math.min(100, Math.max(0, Math.floor(aiProcessedPageCount(doc) * 100 / total)))
+}
+
+function aiAnalysisProgressStatus(doc) {
+  if (['PENDING_CONFIRMATION', 'CONFIRMED', 'AI_PARSE_COMPLETE', 'RAW_JSON_PROCESSING'].includes(doc?.status)) {
+    return 'success'
+  }
+  if (doc?.status === 'PARSE_FAILED') return 'exception'
+  if (doc?.status === 'AI_PARSE_FAILED_REVIEW') return 'warning'
+  return undefined
+}
+
+function aiAnalysisProgressTitle(doc) {
+  return {
+    PARSING: 'AI 正在按页解析',
+    AI_PARSE_COMPLETE: '页级解析完成，正在整理题目结果',
+    RAW_JSON_PROCESSING: '页级解析完成，正在整理题目结果',
+    AI_PARSE_FAILED_REVIEW: 'AI 页级解析存在失败页，可继续解析',
+    PARSE_FAILED: 'AI 解析失败，请查看错误信息',
+    PENDING_CONFIRMATION: 'AI 解析完成，等待确认题目',
+    CONFIRMED: 'AI 解析已确认'
+  }[doc?.status] || 'AI 解析进度'
+}
+
 onMounted(loadDocuments)
-onUnmounted(stopRenderPolling)
+onUnmounted(stopProgressPolling)
 </script>
 

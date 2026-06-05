@@ -303,6 +303,16 @@ h2 {
   color: var(--app-muted);
 }
 
+.ai-progress-panel {
+  background: #f7fbff;
+}
+
+.analysis-progress-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 pre {
   max-height: 220px;
   overflow: auto;
